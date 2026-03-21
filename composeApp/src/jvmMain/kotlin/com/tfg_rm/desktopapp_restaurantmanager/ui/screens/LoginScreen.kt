@@ -29,6 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
@@ -105,6 +108,7 @@ fun LoginScreen(
                             .padding(top = 8.dp),
                         singleLine = true,
                         placeholder = { Text(Strings.t("login.password_placeholder")) },
+                        visualTransformation = PasswordVisualTransformation(),
                         shape = RoundedCornerShape(8.dp)
                     )
 
@@ -120,14 +124,6 @@ fun LoginScreen(
                             Text(text = Strings.t("login.button"))
                         }
                     }
-
-                    Text(
-                        text = Strings.t("login.demo_info"),
-                        color = Color.Gray,
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .align(Alignment.CenterHorizontally)
-                    )
                 }
             }
         }
