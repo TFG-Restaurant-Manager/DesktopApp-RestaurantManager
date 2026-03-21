@@ -27,6 +27,8 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            // Koin for dependency injection (JVM)
+            implementation("io.insert-koin:koin-core:3.4.0")
         }
     }
 }
