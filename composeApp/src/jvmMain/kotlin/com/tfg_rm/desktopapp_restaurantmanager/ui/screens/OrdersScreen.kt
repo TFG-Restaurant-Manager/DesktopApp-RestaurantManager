@@ -1,8 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,12 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrdersViewModel
-import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
+import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.OrderItemView
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -75,10 +70,21 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // Orders grid
-        LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 280.dp), modifier = Modifier.fillMaxHeight()) {
-            items(orders) { order ->
-                OrderCard(order = order)
+        // Orders grid — one card per item unit
+        val flatItems = orders.flatMap { order ->
+            order.orderItemsList.flatMap { item ->
+                List(item.quantity) { order to item }
+            }
+        }
+        LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 260.dp), modifier = Modifier.fillMaxHeight()) {
+            items(flatItems) { (order, item) ->
+                OrderItemView(
+                    item = item.copy(quantity = 1),
+                    tableId = order.tableId,
+                    orderId = order.id,
+                    createdAt = order.createdAt,
+                    onComplete = { viewModel.completeOrderItem(order.id, item.id) }
+                )
             }
         }
     }
@@ -92,56 +98,6 @@ private fun IndicatorCard(modifier: Modifier = Modifier, label: String, value: S
             Text(text = label, style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = value, style = MaterialTheme.typography.headlineSmall, color = color, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun OrderCard(order: Order) {
-    Card(modifier = Modifier.padding(8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Text(text = "Mesa ${order.tableId}", fontWeight = FontWeight.SemiBold)
-                    Text(text = "Order #${order.id}", style = MaterialTheme.typography.bodySmall)
-                }
-                // Badge number placeholder
-                Box(modifier = Modifier.background(Color(0xFFFF9800)).padding(8.dp)) {
-                    Text(text = "#${order.id}", color = Color.White)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Show first item's dish name as title
-            val first = order.orderItemsList.firstOrNull()
-            Text(text = first?.dish?.name ?: "-", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Time box
-            val mins = elapsedMinutes(order)
-            val timeColor = when {
-                mins > 20 -> Color(0xFFEF9A9A)
-                mins >= 10 -> Color(0xFFFFF59D)
-                else -> Color(0xFFC8E6C9)
-            }
-            Card(colors = CardDefaults.cardColors(containerColor = timeColor), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Tiempo", style = MaterialTheme.typography.bodySmall)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = String.format("%d:%02d", mins, elapsedSecondsPart(order)), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(text = "Entrada: ${order.createdAt.toLocalTime().toString().substring(0,5)}", style = MaterialTheme.typography.bodySmall)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(onClick = { /* completar action */ }, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Completar")
-            }
         }
     }
 }

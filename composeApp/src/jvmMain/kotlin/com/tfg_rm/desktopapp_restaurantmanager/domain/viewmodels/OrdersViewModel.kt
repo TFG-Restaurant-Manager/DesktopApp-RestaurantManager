@@ -28,4 +28,24 @@ class OrdersViewModel(
     fun clear() {
 
     }
+
+    fun completeOrderItem(orderId: Int, itemId: Int) {
+        viewModelScope.launch {
+            val updated = _orders.value.mapNotNull { order ->
+                if (order.id != orderId) return@mapNotNull order
+                val newItems = order.orderItemsList.toMutableList()
+                val idx = newItems.indexOfFirst { it.id == itemId }
+                if (idx >= 0) {
+                    val it = newItems[idx]
+                    if (it.quantity > 1) {
+                        newItems[idx] = it.copy(quantity = it.quantity - 1)
+                    } else {
+                        newItems.removeAt(idx)
+                    }
+                }
+                if (newItems.isEmpty()) null else order.copy(orderItemsList = newItems)
+            }
+            _orders.value = updated
+        }
+    }
 }

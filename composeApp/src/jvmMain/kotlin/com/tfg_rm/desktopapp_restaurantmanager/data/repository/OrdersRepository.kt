@@ -20,7 +20,7 @@ class OrdersRepository {
         val item5 = OrderItem(5, dish2, 2, null)
 
         // Fecha base: 24/03/2026 17:10
-        val baseDay = LocalDateTime.of(2026, 3, 24, 17, 10)
+        val baseDay = LocalDateTime.of(2026, 3, 24, 17, 35)
 
         val order1 = Order(
             id = 1,
