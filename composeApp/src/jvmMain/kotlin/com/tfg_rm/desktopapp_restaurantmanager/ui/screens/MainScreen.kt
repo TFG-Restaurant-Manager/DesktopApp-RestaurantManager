@@ -29,14 +29,15 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.*
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import org.koin.compose.viewmodel.koinViewModel
 
+private val primaryOrange = Color(0xFFFF6A00)
+private val selectedBg = Color(0xFFFFF2E6)
+private val unselectedText = Color(0xFF374151)
+
 @Composable
 fun MainScreen(navigate: (String) -> Unit) {
     var selected by remember { mutableStateOf("orders") }
 
     // Color constants matching the design
-    val primaryOrange = Color(0xFFFF6A00)
-    val selectedBg = Color(0xFFFFF2E6)
-    val unselectedText = Color(0xFF374151)
     val logoutColor = Color(0xFFE53935)
 
     Row(modifier = Modifier.fillMaxSize()) {
@@ -62,13 +63,13 @@ fun MainScreen(navigate: (String) -> Unit) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            NavItem(Strings.t("screen.orders.title"), selected == "orders", primaryOrange, selectedBg, unselectedText) { selected = "orders" }
-            NavItem(Strings.t("screen.tables.title"), selected == "tables", primaryOrange, selectedBg, unselectedText) { selected = "tables" }
-            NavItem(Strings.t("screen.employees.title"), selected == "employees", primaryOrange, selectedBg, unselectedText) { selected = "employees" }
-            NavItem(Strings.t("screen.schedule.title"), selected == "schedule", primaryOrange, selectedBg, unselectedText) { selected = "schedule" }
-            NavItem(Strings.t("screen.inventory.title"), selected == "inventory", primaryOrange, selectedBg, unselectedText) { selected = "inventory" }
-            NavItem(Strings.t("screen.economy.title"), selected == "economy", primaryOrange, selectedBg, unselectedText) { selected = "economy" }
-            NavItem(Strings.t("screen.orderHistory.title"), selected == "orderHistory", primaryOrange, selectedBg, unselectedText) { selected = "orderHistory" }
+            NavItem(Strings.t("screen.orders.title"), selected == "orders") { selected = "orders" }
+            NavItem(Strings.t("screen.tables.title"), selected == "tables") { selected = "tables" }
+            NavItem(Strings.t("screen.employees.title"), selected == "employees") { selected = "employees" }
+            NavItem(Strings.t("screen.schedule.title"), selected == "schedule") { selected = "schedule" }
+            NavItem(Strings.t("screen.inventory.title"), selected == "inventory") { selected = "inventory" }
+            NavItem(Strings.t("screen.economy.title"), selected == "economy") { selected = "economy" }
+            NavItem(Strings.t("screen.orderHistory.title"), selected == "orderHistory") { selected = "orderHistory" }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -105,13 +106,10 @@ fun MainScreen(navigate: (String) -> Unit) {
 private fun NavItem(
     label: String,
     selected: Boolean,
-    primaryColor: Color,
-    selectedBg: Color,
-    unselectedText: Color,
     onClick: () -> Unit
 ) {
     val bg = if (selected) selectedBg else Color.Transparent
-    val textColor = if (selected) primaryColor else unselectedText
+    val textColor = if (selected) primaryOrange else unselectedText
     Row(
         modifier = Modifier
             .fillMaxWidth()

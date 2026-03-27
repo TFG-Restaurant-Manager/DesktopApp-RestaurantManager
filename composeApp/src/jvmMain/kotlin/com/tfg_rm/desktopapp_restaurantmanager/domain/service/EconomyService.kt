@@ -1,5 +1,7 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.service
 
-interface EconomyService {
-    suspend fun loadInitialData()
+class EconomyService {
+    suspend fun loadInitialData() {
+        // No-op stub for economy data; implement calculations or repo calls as needed.
+    }
 }

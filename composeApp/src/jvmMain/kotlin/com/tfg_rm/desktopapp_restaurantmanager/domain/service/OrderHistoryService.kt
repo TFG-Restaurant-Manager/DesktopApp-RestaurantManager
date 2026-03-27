@@ -1,5 +1,7 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.service
 
-interface OrderHistoryService {
-    suspend fun loadInitialData()
+class OrderHistoryService {
+    suspend fun loadInitialData() {
+        // No-op stub for order history; implement real loading if/when needed.
+    }
 }

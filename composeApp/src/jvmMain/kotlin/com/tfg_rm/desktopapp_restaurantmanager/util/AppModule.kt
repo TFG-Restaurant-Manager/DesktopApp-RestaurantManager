@@ -4,9 +4,17 @@ import org.koin.dsl.module
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.ExampleService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.ExampleRepository
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.OrdersRepository
-import com.tfg_rm.desktopapp_restaurantmanager.data.service.OrdersService
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.EmployeesRepository
-import com.tfg_rm.desktopapp_restaurantmanager.data.service.EmployeesService
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
+import com.tfg_rm.desktopapp_restaurantmanager.data.repository.IngredientsRepository
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.IngredientsService
+import com.tfg_rm.desktopapp_restaurantmanager.data.repository.ScheduleRepository
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.ScheduleService
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.TablesService
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.LoginService
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrderHistoryService
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EconomyService
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EconomyViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.ExampleViewModel
@@ -26,6 +34,14 @@ val appModule = module {
     singleOf(::OrdersService)
     singleOf(::EmployeesRepository)
     singleOf(::EmployeesService)
+    singleOf(::IngredientsRepository)
+    singleOf(::IngredientsService)
+    singleOf(::ScheduleRepository)
+    singleOf(::ScheduleService)
+    singleOf(::TablesService)
+    singleOf(::LoginService)
+    singleOf(::OrderHistoryService)
+    singleOf(::EconomyService)
 
     viewModelOf(::ExampleViewModel)
     viewModelOf(::LoginViewModel)
