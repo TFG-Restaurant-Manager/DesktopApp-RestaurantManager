@@ -18,8 +18,6 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -27,8 +25,11 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            // Koin for dependency injection (JVM)
-            implementation("io.insert-koin:koin-core:3.4.0")
+            implementation("io.insert-koin:koin-core:4.2.0")
+            implementation("io.insert-koin:koin-core:4.2.0")
+            implementation("io.insert-koin:koin-compose:4.2.0")
+            implementation("io.insert-koin:koin-compose-viewmodel:4.2.0")
+            implementation("io.insert-koin:koin-compose-viewmodel-navigation:4.2.0")
         }
     }
 }
