@@ -31,6 +31,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -239,6 +241,7 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                     Text(text = Strings.t("screen.inventory.table.price_unit"),   modifier = Modifier.weight(1.5f), fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
                     Text(text = Strings.t("screen.inventory.table.total_value"),  modifier = Modifier.weight(1.5f), fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
                     Text(text = Strings.t("screen.inventory.table.status"),       modifier = Modifier.weight(1f),   fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
+                    Text(text = Strings.t("screen.inventory.table.usable_in_dishes"), modifier = Modifier.weight(1.2f), fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
                     Spacer(modifier = Modifier.weight(1.2f))
                 }
                 
@@ -311,12 +314,26 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                                 }
                             }
                             
-                            Row(modifier = Modifier.weight(1.2f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                IconButton(onClick = { editTarget = ingredient }, modifier = Modifier.size(36.dp)) {
-                                    Text("✎", color = Color(0xFF3B82F6), fontSize = 18.sp)
+                            Row(modifier = Modifier.weight(1.2f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (ingredient.usableInDishes) Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
+                                ) {
+                                    Text(
+                                        text = if (ingredient.usableInDishes) Strings.t("screen.ingredient.usable.yes") else Strings.t("screen.ingredient.usable.no"),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        color = if (ingredient.usableInDishes) Color(0xFF16A34A) else Color(0xFF94A3B8),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
-                                IconButton(onClick = { deleteTarget = ingredient }, modifier = Modifier.size(36.dp)) {
-                                    Text("🗑", color = Color(0xFFEF4444), fontSize = 18.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    IconButton(onClick = { editTarget = ingredient }, modifier = Modifier.size(36.dp)) {
+                                        Text("✎", color = Color(0xFF3B82F6), fontSize = 18.sp)
+                                    }
+                                    IconButton(onClick = { deleteTarget = ingredient }, modifier = Modifier.size(36.dp)) {
+                                        Text("🗑", color = Color(0xFFEF4444), fontSize = 18.sp)
+                                    }
                                 }
                             }
                         }
@@ -429,6 +446,7 @@ private fun IngredientFormDialog(
     var stock        by remember { mutableStateOf(initial?.stockQuantity?.toString() ?: "") }
     var minStock     by remember { mutableStateOf(initial?.minimumStock?.toString()  ?: "") }
     var cost         by remember { mutableStateOf(initial?.costUnit?.toString()       ?: "") }
+    var usableInDishes by remember { mutableStateOf(initial?.usableInDishes ?: true) }
     var showCatPicker by remember { mutableStateOf(false) }
     var error        by remember { mutableStateOf<String?>(null) }
 
@@ -456,6 +474,15 @@ private fun IngredientFormDialog(
                     TextField(value = minStock, onValueChange = { minStock = it; error = null }, label = { Text(Strings.t("screen.ingredient.form.stock_minimum")) },  singleLine = true, modifier = Modifier.weight(1f))
                 }
                 TextField(value = cost,     onValueChange = { cost = it;     error = null }, label = { Text(Strings.t("screen.ingredient.form.price_unit")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = usableInDishes,
+                        onCheckedChange = { usableInDishes = it },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Orange)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = Strings.t("screen.ingredient.form.usable_in_dishes"), style = MaterialTheme.typography.bodyMedium)
+                }
                 if (error != null) Text(text = error!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
             }
         },
@@ -471,7 +498,7 @@ private fun IngredientFormDialog(
                     stockD == null   -> error = Strings.t("screen.ingredient.form.error.stock_invalid")
                     minD == null     -> error = Strings.t("screen.ingredient.form.error.min_stock_invalid")
                     costD == null    -> error = Strings.t("screen.ingredient.form.error.price_invalid")
-                    else -> onConfirm(Ingredient(id = 0, restaurantId = 1, name = name.trim(), unit = unit.trim(), stockQuantity = stockD, costUnit = costD, category = category.trim(), minimumStock = minD))
+                    else -> onConfirm(Ingredient(id = 0, restaurantId = 1, name = name.trim(), unit = unit.trim(), stockQuantity = stockD, costUnit = costD, category = category.trim(), minimumStock = minD, usableInDishes = usableInDishes))
                 }
             }) { Text(text = Strings.t("screen.ingredient.form.save")) }
         },

@@ -9,6 +9,8 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.repository.EmployeesReposito
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.IngredientsRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.IngredientsService
+import com.tfg_rm.desktopapp_restaurantmanager.data.repository.DishesRepository
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.DishesService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.ScheduleRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.ScheduleService
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.TablesService
@@ -19,6 +21,7 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EconomyViewMode
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.ExampleViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.InventoryViewModel
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.DishesViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.LoginViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrderHistoryViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrdersViewModel
@@ -36,6 +39,8 @@ val appModule = module {
     singleOf(::EmployeesService)
     singleOf(::IngredientsRepository)
     singleOf(::IngredientsService)
+    singleOf(::DishesRepository)
+    singleOf(::DishesService)
     singleOf(::ScheduleRepository)
     singleOf(::ScheduleService)
     singleOf(::TablesService)
@@ -50,6 +55,7 @@ val appModule = module {
     viewModelOf(::EmployeesViewModel)
     viewModelOf(::ScheduleViewModel)
     viewModelOf(::InventoryViewModel)
+    viewModelOf(::DishesViewModel)
     viewModelOf(::EconomyViewModel)
     viewModelOf(::OrderHistoryViewModel)
 }

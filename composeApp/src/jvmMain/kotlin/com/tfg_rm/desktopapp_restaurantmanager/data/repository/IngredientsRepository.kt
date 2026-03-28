@@ -18,7 +18,7 @@ class IngredientsRepository {
         Ingredient(5,  1, "Pasta",            "kg",       75.0, 1.80,  "Secos",       30.0),
         Ingredient(6,  1, "Aceite de Oliva",  "litros",    8.0, 8.50,  "Condimentos", 12.0),
         Ingredient(7,  1, "Queso Parmesano",  "kg",       22.0, 18.00, "Lácteos",     15.0),
-        Ingredient(8,  1, "Vino Tinto",       "botellas", 48.0, 7.50,  "Bebidas",     30.0),
+        Ingredient(8,  1, "Vino Tinto",       "botellas", 48.0, 7.50,  "Bebidas",     30.0, usableInDishes = false),
         Ingredient(9,  1, "Harina",           "kg",       55.0, 0.90,  "Secos",       40.0),
         Ingredient(10, 1, "Cebolla",          "kg",       28.0, 1.50,  "Verduras",    20.0)
     )

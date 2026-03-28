@@ -8,5 +8,6 @@ data class Ingredient(
     val stockQuantity: Double,
     val costUnit: Double,
     val category: String,
-    val minimumStock: Double
+    val minimumStock: Double,
+    val usableInDishes: Boolean = true
 )

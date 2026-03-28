@@ -68,6 +68,7 @@ fun MainScreen(navigate: (String) -> Unit) {
             NavItem(Strings.t("screen.employees.title"), selected == "employees") { selected = "employees" }
             NavItem(Strings.t("screen.schedule.title"), selected == "schedule") { selected = "schedule" }
             NavItem(Strings.t("screen.inventory.title"), selected == "inventory") { selected = "inventory" }
+            NavItem(Strings.t("screen.dishes.title"),    selected == "dishes")    { selected = "dishes" }
             NavItem(Strings.t("screen.economy.title"), selected == "economy") { selected = "economy" }
             NavItem(Strings.t("screen.orderHistory.title"), selected == "orderHistory") { selected = "orderHistory" }
 
@@ -93,8 +94,7 @@ fun MainScreen(navigate: (String) -> Unit) {
                 "tables" -> TablesScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "employees" -> EmployeesScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "schedule" -> ScheduleScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "inventory" -> InventoryScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "economy" -> EconomyScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "inventory" -> InventoryScreen(koinViewModel(), Modifier.fillMaxWidth())                "dishes"       -> DishesScreen(koinViewModel(), Modifier.fillMaxWidth())                "economy" -> EconomyScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "orderHistory" -> OrderHistoryScreen(koinViewModel(), Modifier.fillMaxWidth())
                 else -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
             }
