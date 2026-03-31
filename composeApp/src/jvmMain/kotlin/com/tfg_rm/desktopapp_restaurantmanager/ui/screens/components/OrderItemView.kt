@@ -18,6 +18,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,29 +32,46 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem
 import java.time.Duration
 import java.time.LocalDateTime
 import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.delay
 
 @Composable
 fun OrderItemView(
     item: OrderItem,
     tableId: Int,
     orderId: Int,
+    displayNumber: Int,
     createdAt: LocalDateTime,
     modifier: Modifier = Modifier,
     onComplete: () -> Unit = {}
 ) {
-    val mins = try { Duration.between(createdAt, LocalDateTime.now()).toMinutes() } catch (e: Exception) { 0 }
-    val hours = mins / 60
-    val minsRem = mins % 60
-    val timeDisplay = if (mins < 60) String.format("%dm", mins) else String.format("%dh %02dm", hours, minsRem)
+    // Auto-tick every second
+    var now by remember { mutableStateOf(LocalDateTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000L)
+            now = LocalDateTime.now()
+        }
+    }
+
+    val duration = try { Duration.between(createdAt, now) } catch (e: Exception) { Duration.ZERO }
+    val totalSeconds = duration.seconds.coerceAtLeast(0)
+    val totalMins    = totalSeconds / 60
+    val secsRem      = totalSeconds % 60
+    val hours        = totalMins / 60
+    val minsRem      = totalMins % 60
+    val timeDisplay  = if (totalMins < 60)
+        String.format("%dm %02ds", totalMins, secsRem)
+    else
+        String.format("%dh %02dm", hours, minsRem)
 
     val borderColor = when {
-        mins > 20 -> Color(0xFFD32F2F)
-        mins >= 10 -> Color(0xFFF9A825)
+        totalMins > 20 -> Color(0xFFD32F2F)
+        totalMins >= 10 -> Color(0xFFF9A825)
         else -> Color(0xFFE0E0E0)
     }
     val (timeBoxBg, timeBoxBorder, timeTextColor) = when {
-        mins > 20 -> Triple(Color(0xFFFFEBEE), Color(0xFFD32F2F), Color(0xFFD32F2F))
-        mins >= 10 -> Triple(Color(0xFFFFF8E1), Color(0xFFF9A825), Color(0xFFF57F17))
+        totalMins > 20 -> Triple(Color(0xFFFFEBEE), Color(0xFFD32F2F), Color(0xFFD32F2F))
+        totalMins >= 10 -> Triple(Color(0xFFFFF8E1), Color(0xFFF9A825), Color(0xFFF57F17))
         else -> Triple(Color(0xFFE8F5E9), Color(0xFF66BB6A), Color(0xFF2E7D32))
     }
 
@@ -76,7 +98,7 @@ fun OrderItemView(
                         .background(Color(0xFFFF9800), shape = RoundedCornerShape(6.dp))
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Text(text = "#$orderId", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(text = "#$displayNumber", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
 

@@ -246,7 +246,7 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
                                 
                                 // Day columns
                                 DAYS.forEach { day ->
-                                    val shift = shifts.find { it.employeeEmail == emp.email && it.startDateTime.dayOfWeek == day }
+                                    val shift = shifts.find { it.employeeRestaurantId == emp.id && it.startDateTime.dayOfWeek == day }
                                     Box(modifier = Modifier.width(140.dp).padding(horizontal = 8.dp)) {
                                         Box(
                                             modifier = Modifier
@@ -291,14 +291,14 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
         ShiftEditDialog(
             employee = emp,
             day = day,
-            currentShift = shifts.find { it.employeeEmail == emp.email && it.startDateTime.dayOfWeek == day },
+            currentShift = shifts.find { it.employeeRestaurantId == emp.id && it.startDateTime.dayOfWeek == day },
             onDismiss = { editTarget = null },
             onSave = { shift ->
                 viewModel.setShift(shift)
                 editTarget = null
             },
             onRemove = {
-                viewModel.removeShift(emp.email, day)
+                viewModel.removeShift(emp.id, day)
                 editTarget = null
             }
         )
@@ -431,7 +431,7 @@ private fun ShiftEditDialog(
                         if (!endTime.isAfter(startTime)) { error = Strings.t("screen.shift.error.end_after_start") ; return@Button }
                         val start = LocalDateTime.of(shiftDate, startTime)
                         val end   = LocalDateTime.of(shiftDate, endTime)
-                        onSave(Shift(employeeEmail = employee.email, startDateTime = start, endDateTime = end))
+                        onSave(Shift(employeeRestaurantId = employee.id, startDateTime = start, endDateTime = end))
                     } catch (e: Exception) {
                         error = Strings.t("screen.shift.error.format_invalid")
                     }

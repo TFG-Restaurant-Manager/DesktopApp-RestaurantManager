@@ -63,6 +63,7 @@ fun MainScreen(navigate: (String) -> Unit) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
+            NavItem("Hacer Pedido", selected == "newOrder") { selected = "newOrder" }
             NavItem(Strings.t("screen.orders.title"), selected == "orders") { selected = "orders" }
             NavItem(Strings.t("screen.tables.title"), selected == "tables") { selected = "tables" }
             NavItem(Strings.t("screen.employees.title"), selected == "employees") { selected = "employees" }
@@ -90,6 +91,10 @@ fun MainScreen(navigate: (String) -> Unit) {
             .padding(20.dp)
         ) {
             when (selected) {
+                "newOrder" -> NewOrderScreen(
+                    viewModel = koinViewModel(),
+                    modifier  = Modifier.fillMaxWidth()
+                )
                 "orders" -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "tables" -> TablesScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "employees" -> EmployeesScreen(koinViewModel(), Modifier.fillMaxWidth())

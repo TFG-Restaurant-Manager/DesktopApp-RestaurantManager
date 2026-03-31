@@ -25,8 +25,28 @@ class OrdersViewModel(
         }
     }
 
-    fun clear() {
+    fun clear() { }
 
+    /** Called by NewOrderScreen to push a finished order into the active list. */
+    fun addOrder(order: Order) {
+        viewModelScope.launch {
+            service.addOrder(order)
+            _orders.value = service.getOrders()
+        }
+    }
+
+    /** Append extra items to an existing order (used when re-opening a pending order). */
+    fun appendItems(orderId: Int, newItems: List<com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem>) {
+        viewModelScope.launch {
+            val order = _orders.value.firstOrNull { it.id == orderId } ?: return@launch
+            val merged = order.orderItemsList.toMutableList().also { it.addAll(newItems) }
+            val updated = order.copy(
+                total = merged.sumOf { it.unitPrice * it.quantity },
+                orderItemsList = merged
+            )
+            service.updateOrder(updated)
+            _orders.value = service.getOrders()
+        }
     }
 
     fun completeOrderItem(orderId: Int, itemId: Int) {

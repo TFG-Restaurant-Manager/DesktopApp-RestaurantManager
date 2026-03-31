@@ -7,4 +7,6 @@ class OrdersService(
     private val repository: OrdersRepository
 ) {
     suspend fun getOrders(): List<Order> = repository.getOrders()
+    suspend fun addOrder(order: Order): Order = repository.addOrder(order)
+    suspend fun updateOrder(order: Order) = repository.updateOrder(order)
 }

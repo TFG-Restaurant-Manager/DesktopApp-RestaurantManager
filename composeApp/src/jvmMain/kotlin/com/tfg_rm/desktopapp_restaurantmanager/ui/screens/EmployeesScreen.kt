@@ -322,7 +322,7 @@ private fun NewEmployeeDialog(onDismiss: () -> Unit, onSave: (Employee) -> Unit)
         },
         confirmButton = {
             TextButton(onClick = {
-                val emp = Employee(roleName = role, name = name, email = email, phone = phone, schedules = emptyList())
+                val emp = Employee(id = 0, roleName = role, name = name, email = email, phone = phone)
                 onSave(emp)
             }) { Text(text = "Crear", color = Color(0xFFF97316)) }
         },

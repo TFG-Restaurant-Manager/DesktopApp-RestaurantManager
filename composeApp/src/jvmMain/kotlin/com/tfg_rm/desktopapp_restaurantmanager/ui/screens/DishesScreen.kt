@@ -41,9 +41,9 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
     var editTarget       by remember { mutableStateOf<Dishes?>(null) }
     var deleteTarget     by remember { mutableStateOf<Dishes?>(null) }
 
-    val categories       = dishes.map { it.category }.distinct().sorted()
+    val categories       = dishes.map { it.categoryName }.distinct().sorted()
     val displayed        = if (selectedCategory == Strings.t("screen.dishes.filter.all")) dishes
-                           else dishes.filter { it.category == selectedCategory }
+                           else dishes.filter { it.categoryName == selectedCategory }
     val availableCount   = dishes.count { it.available }
     val unavailableCount = dishes.count { !it.available }
 
@@ -245,7 +245,7 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
             color    = MaterialTheme.colorScheme.onSurfaceVariant,
             style    = MaterialTheme.typography.bodySmall
         )
-        Text(dish.category,    Modifier.weight(1.5f), style = MaterialTheme.typography.bodySmall)
+        Text(dish.categoryName, Modifier.weight(1.5f), style = MaterialTheme.typography.bodySmall)
         Text("%.2f €".format(dish.price), Modifier.weight(1f), fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodySmall)
         Text(
             text     = ingredientsSummary,
@@ -286,7 +286,7 @@ private fun DishFormDialog(
 
     var name        by remember { mutableStateOf(dish?.name        ?: "") }
     var description by remember { mutableStateOf(dish?.description ?: "") }
-    var category    by remember { mutableStateOf(dish?.category    ?: "") }
+    var category    by remember { mutableStateOf(dish?.categoryName ?: "") }
     var price       by remember { mutableStateOf(dish?.price?.toString() ?: "") }
     var available   by remember { mutableStateOf(dish?.available   ?: true) }
     var dishIngredients by remember { mutableStateOf(dish?.ingredients ?: emptyList<DishIngredient>()) }
@@ -492,7 +492,7 @@ private fun DishFormDialog(
                                 id          = dish?.id ?: 0,
                                 name        = name.trim(),
                                 description = description.trim(),
-                                category    = category.trim(),
+                                categoryName = category.trim(),
                                 price       = priceVal!!,
                                 available   = available,
                                 ingredients = dishIngredients

@@ -1,11 +1,12 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.models
 
-import java.time.LocalDateTime
-
 data class Employee(
+    // ── Server fields (DB: employees + employee_restaurants join) ────────
+    val id: Int,
     val roleName: String,
     val name: String,
     val email: String,
     val phone: String,
-    val schedules: List<Pair<LocalDateTime, LocalDateTime>>
+    val active: Boolean = true
+    // schedules come from work_schedules table → use Shift model separately
 )

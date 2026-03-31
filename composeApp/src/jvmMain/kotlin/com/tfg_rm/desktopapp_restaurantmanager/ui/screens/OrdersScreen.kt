@@ -70,20 +70,20 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // Orders grid — one card per item unit
-        val flatItems = orders.flatMap { order ->
-            order.orderItemsList.flatMap { item ->
-                List(item.quantity) { order to item }
-            }
-        }
+        // Orders grid — one card per item unit, numbered sequentially 1, 2, 3…
+        data class FlatEntry(val displayNumber: Int, val order: Order, val item: com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem)
+        val flatItems = orders
+            .flatMap { order -> order.orderItemsList.flatMap { item -> List(item.quantity) { order to item } } }
+            .mapIndexed { idx, (order, item) -> FlatEntry(idx + 1, order, item) }
         LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 260.dp), modifier = Modifier.fillMaxHeight()) {
-            items(flatItems) { (order, item) ->
+            items(flatItems) { entry ->
                 OrderItemView(
-                    item = item.copy(quantity = 1),
-                    tableId = order.tableId,
-                    orderId = order.id,
-                    createdAt = order.createdAt,
-                    onComplete = { viewModel.completeOrderItem(order.id, item.id) }
+                    item          = entry.item.copy(quantity = 1),
+                    tableId       = entry.order.tableId,
+                    orderId       = entry.order.id,
+                    displayNumber = entry.displayNumber,
+                    createdAt     = entry.order.createdAt,
+                    onComplete    = { viewModel.completeOrderItem(entry.order.id, entry.item.id) }
                 )
             }
         }

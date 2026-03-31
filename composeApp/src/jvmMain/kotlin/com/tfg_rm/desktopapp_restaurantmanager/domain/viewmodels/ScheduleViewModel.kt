@@ -40,9 +40,9 @@ class ScheduleViewModel(
         }
     }
 
-    fun removeShift(employeeEmail: String, day: DayOfWeek) {
+    fun removeShift(employeeRestaurantId: Int, day: DayOfWeek) {
         viewModelScope.launch {
-            scheduleService.removeShift(employeeEmail, day)
+            scheduleService.removeShift(employeeRestaurantId, day)
             _shifts.value = scheduleService.getShifts()
         }
     }

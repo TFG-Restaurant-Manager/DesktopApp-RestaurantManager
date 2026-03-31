@@ -11,6 +11,6 @@ class ScheduleService(
 
     suspend fun setShift(shift: Shift) = repository.setShift(shift)
 
-    suspend fun removeShift(employeeEmail: String, day: DayOfWeek) =
-        repository.removeShift(employeeEmail, day)
+    suspend fun removeShift(employeeRestaurantId: Int, day: DayOfWeek) =
+        repository.removeShift(employeeRestaurantId, day)
 }

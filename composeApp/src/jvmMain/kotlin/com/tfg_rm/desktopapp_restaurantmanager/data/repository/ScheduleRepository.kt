@@ -9,11 +9,11 @@ class ScheduleRepository {
     suspend fun getShifts(): List<Shift> = shifts.toList()
 
     suspend fun setShift(shift: Shift) {
-        shifts.removeAll { it.employeeEmail == shift.employeeEmail && it.startDateTime.dayOfWeek == shift.startDateTime.dayOfWeek }
+        shifts.removeAll { it.employeeRestaurantId == shift.employeeRestaurantId && it.startDateTime.dayOfWeek == shift.startDateTime.dayOfWeek }
         shifts.add(shift)
     }
 
-    suspend fun removeShift(employeeEmail: String, day: DayOfWeek) {
-        shifts.removeAll { it.employeeEmail == employeeEmail && it.startDateTime.dayOfWeek == day }
+    suspend fun removeShift(employeeRestaurantId: Int, day: DayOfWeek) {
+        shifts.removeAll { it.employeeRestaurantId == employeeRestaurantId && it.startDateTime.dayOfWeek == day }
     }
 }
