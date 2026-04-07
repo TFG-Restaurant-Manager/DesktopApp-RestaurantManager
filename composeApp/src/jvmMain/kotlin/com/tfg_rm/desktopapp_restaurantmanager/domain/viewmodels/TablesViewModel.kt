@@ -7,6 +7,7 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.service.TablesService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.launch
 
 private const val DEFAULT_TABLE_ID = 1
@@ -31,8 +32,11 @@ class TablesViewModel(
     fun addTable(posX: Int, posY: Int, capacity: Int = 4) {
         if (_tables.value.any { it.posX == posX && it.posY == posY }) return
         viewModelScope.launch {
-            service.addTable(Table(id = 0, capacity = capacity, posX = posX, posY = posY))
-            _tables.value = service.getTables()
+            val list = _tables.value.map { it.id }
+            val nextId = (1..list.size + 1).first { it !in list.toSet() }
+            val newTable = Table(id = nextId, capacity = capacity, posX = posX, posY = posY)
+            service.addTable(newTable)
+            _tables.value.plus(newTable)
         }
     }
 
@@ -43,7 +47,9 @@ class TablesViewModel(
         viewModelScope.launch {
             val table = _tables.value.firstOrNull { it.id == id } ?: return@launch
             service.updateTable(table.copy(posX = posX, posY = posY))
-            _tables.value = service.getTables()
+            val tableUpdate = _tables.value.find { it.id == id }
+            tableUpdate?.posY = posY
+            tableUpdate?.posX = posX
         }
     }
 

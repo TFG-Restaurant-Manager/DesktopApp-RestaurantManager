@@ -65,6 +65,11 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
 
     val totalCapacity = tables.sumOf { it.capacity }
 
+    // Atributes to observe the place to drop the tables
+    var hoverCol by remember { mutableStateOf<Int?>(null) }
+    var hoverRow by remember { mutableStateOf<Int?>(null) }
+    var dragStartBase by remember { mutableStateOf(Offset.Zero) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -115,23 +120,34 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                         newTableDragging = true
                                         // chipAbsPos + localOffset = absolute cursor position on screen
                                         newTableOffset   = chipAbsPos + localOffset
+
+                                        hoverCol = null
+                                        hoverRow = null
                                     },
                                     onDrag = { change, amount ->
                                         change.consume()
                                         newTableOffset += amount
+
+                                        val relX = newTableOffset.x - gridTopLeft.x + cellSize.toPx() / 2
+                                        val relY = newTableOffset.y - gridTopLeft.y + cellSize.toPx() / 2
+                                        val cellPx = (cellSize + cellGap).toPx()
+
+                                        val col = (relX / cellPx).toInt() + 1
+                                        val row = (relY / cellPx).toInt() + 1
+
+                                        hoverCol = col.coerceIn(1, GRID_COLS)
+                                        hoverRow = row.coerceIn(1, GRID_ROWS)
                                     },
                                     onDragEnd = {
                                         newTableDragging = false
-                                        // Convert absolute drag position → grid cell
-                                        val relX = newTableOffset.x - gridTopLeft.x
-                                        val relY = newTableOffset.y - gridTopLeft.y
-                                        val cellPx = (cellSize + cellGap).toPx()
-                                        val col  = (relX / cellPx).toInt() + 1
-                                        val row  = (relY / cellPx).toInt() + 1
-                                        if (col in 1..GRID_COLS && row in 1..GRID_ROWS) {
-                                            pendingNewCol = col
-                                            pendingNewRow = row
+
+                                        if (hoverCol != null && hoverRow != null) {
+                                            pendingNewCol = hoverCol
+                                            pendingNewRow = hoverRow
                                         }
+
+                                        hoverCol = null
+                                        hoverRow = null
                                         newTableOffset = Offset.Zero
                                     },
                                     onDragCancel = {
@@ -241,6 +257,7 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                         // Empty cell drop zones
                         for (r in 1..GRID_ROWS) {
                             for (c in 1..GRID_COLS) {
+                                val isHover = (hoverCol == c && hoverRow == r)
                                 val occupied = tables.any { it.posX == c && it.posY == r }
                                 if (!occupied) {
                                     Box(
@@ -250,7 +267,14 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                 y = ((r - 1) * (cellSize + cellGap).value).dp
                                             )
                                             .size(cellSize)
-                                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                                            .border(
+                                                width = if (isHover) 3.dp else 1.dp,
+                                                color = if (isHover) tableOrange else Color(0xFFE2E8F0),
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            .background(
+                                                if (isHover) tableOrange.copy(alpha = 0.15f) else Color.Transparent
+                                            )
                                     )
                                 }
                             }
@@ -283,20 +307,46 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                     .then(
                                         if (!isDefault) Modifier.pointerInput(table.id) {
                                             detectDragGestures(
-                                                onDragStart = { draggingId = table.id; dragOffset = Offset.Zero },
-                                                onDrag      = { change, amount -> change.consume(); dragOffset += amount },
-                                                onDragEnd   = {
-                                                    // Snap to nearest cell
-                                                    val baseX = (table.posX - 1) * (cellSize + cellGap).toPx()
-                                                    val baseY = (table.posY - 1) * (cellSize + cellGap).toPx()
+                                                onDragStart = {
+                                                    draggingId = table.id
+                                                    dragOffset = Offset.Zero
+
+                                                    dragStartBase = Offset(
+                                                        (table.posX - 1) * (cellSize + cellGap).toPx(),
+                                                        (table.posY - 1) * (cellSize + cellGap).toPx()
+                                                    )
+
+                                                    hoverCol = null
+                                                    hoverRow = null
+                                                },
+                                                onDrag      = { change, amount ->
+                                                    change.consume()
+                                                    dragOffset += amount
+
                                                     val cellPx = (cellSize + cellGap).toPx()
-                                                    val newCol = ((baseX + dragOffset.x) / cellPx).roundToInt() + 1
-                                                    val newRow = ((baseY + dragOffset.y) / cellPx).roundToInt() + 1
-                                                    val clampedCol = newCol.coerceIn(1, GRID_COLS)
-                                                    val clampedRow = newRow.coerceIn(1, GRID_ROWS)
-                                                    viewModel.moveTable(table.id, clampedCol, clampedRow)
-                                                    draggingId  = null
-                                                    dragOffset  = Offset.Zero
+
+                                                    val absoluteX = dragStartBase.x + dragOffset.x
+                                                    val absoluteY = dragStartBase.y + dragOffset.y
+
+                                                    val col = ((absoluteX + cellSize.toPx() / 2) / cellPx).toInt() + 1
+                                                    val row = ((absoluteY + cellSize.toPx() / 2) / cellPx).toInt() + 1
+
+                                                    hoverCol = col.coerceIn(1, GRID_COLS)
+                                                    hoverRow = row.coerceIn(1, GRID_ROWS)
+                                                },
+                                                onDragEnd   = {
+                                                    if (hoverCol != null && hoverRow != null) {
+                                                        val occupied = tables.any { it.posX == hoverCol && it.posY == hoverRow }
+
+                                                        if (!occupied) {
+                                                            viewModel.moveTable(table.id, hoverCol!!, hoverRow!!)
+                                                        }
+                                                    }
+
+                                                    draggingId = null
+                                                    dragOffset = Offset.Zero
+                                                    hoverCol = null
+                                                    hoverRow = null
                                                 },
                                                 onDragCancel = { draggingId = null; dragOffset = Offset.Zero }
                                             )
@@ -318,7 +368,7 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                         verticalAlignment    = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                                     ) {
-                                        Text("👤", fontSize = 11.sp)
+                                        Text("👤", fontSize = 11.sp, color = Color.White)
                                         Text(
                                             table.capacity.toString(),
                                             fontSize     = 13.sp,

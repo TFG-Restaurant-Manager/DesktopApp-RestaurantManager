@@ -18,8 +18,8 @@ data class Table(
     val restaurantId: Int = 1,
     val name: String = "",
     val capacity: Int,
-    val posX: Int,
-    val posY: Int,
+    var posX: Int,
+    var posY: Int,
     val active: Boolean = true,
     val sectionId: Int? = null
 )

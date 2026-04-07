@@ -4,8 +4,6 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 
 class TablesRepository {
 
-    private var nextId = 7
-
     /** Table 1 is fixed at (col=1, row=1) and cannot be moved. */
     private val tables = mutableListOf(
         Table(id = 1, name = "Mesa 1", capacity = 4, posX = 1, posY = 1),
@@ -19,9 +17,8 @@ class TablesRepository {
     suspend fun getTables(): List<Table> = tables.toList()
 
     suspend fun addTable(table: Table): Table {
-        val withId = table.copy(id = nextId++)
-        tables.add(withId)
-        return withId
+        tables.add(table)
+        return table
     }
 
     suspend fun updateTable(updated: Table) {
