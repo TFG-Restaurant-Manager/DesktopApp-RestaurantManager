@@ -1,6 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.ScheduleRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.ScheduleRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.WorkScheduleRequest
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Shift
 import java.time.DayOfWeek

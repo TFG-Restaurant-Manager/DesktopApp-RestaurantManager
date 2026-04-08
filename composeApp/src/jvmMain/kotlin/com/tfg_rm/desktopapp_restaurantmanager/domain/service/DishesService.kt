@@ -12,7 +12,7 @@ class DishesService(
     suspend fun getDishes(): List<Dishes>           = dishesRepository.getDishes()
     suspend fun getIngredients(): List<Ingredient> = ingredientsRepository.getIngredients()
         .filter { it.usableInDishes }
-    suspend fun addDish(dish: Dishes): Dishes       = dishesRepository.addDish(dish)
+    suspend fun addDish(dish: Dishes)       = dishesRepository.addDish(dish)
     suspend fun updateDish(dish: Dishes)            = dishesRepository.updateDish(dish)
     suspend fun deleteDish(id: Int)                 = dishesRepository.deleteDish(id)
 }

@@ -25,14 +25,3 @@ data class EmployeeWithSchedulesResponse(
     val restaurantName: String,
     val schedules: List<EmployeeScheduleResponse> = emptyList()
 )
-
-fun EmployeeWithSchedulesResponse.toDomain() = Employee(
-    id = id.toInt(),
-    roleName = roleName,
-    name = name,
-    email = email,
-    phone = phone ?: "",
-    code = code ?: "",
-    startDate = startDate,
-    active = active
-)

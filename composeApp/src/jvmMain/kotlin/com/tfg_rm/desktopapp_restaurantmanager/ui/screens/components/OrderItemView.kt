@@ -105,7 +105,7 @@ fun OrderItemView(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Dish name
-            Text(text = item.dish.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = item.dishName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (!item.notes.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = item.notes, style = MaterialTheme.typography.bodySmall, color = Color.Gray, maxLines = 2, overflow = TextOverflow.Ellipsis)

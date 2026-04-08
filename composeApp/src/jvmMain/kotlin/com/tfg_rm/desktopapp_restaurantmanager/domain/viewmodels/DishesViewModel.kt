@@ -8,6 +8,7 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.service.DishesService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class DishesViewModel(
@@ -28,23 +29,31 @@ class DishesViewModel(
     }
 
     fun addDish(dish: Dishes) {
+        _dishes.update {currentList ->
+            currentList + dish
+        }
         viewModelScope.launch {
             service.addDish(dish)
-            _dishes.value = service.getDishes()
         }
     }
 
     fun updateDish(dish: Dishes) {
+        _dishes.value.map {currentDish ->
+            if (currentDish.id == dish.id) {
+                dish
+            }else {
+                currentDish
+            }
+        }
         viewModelScope.launch {
             service.updateDish(dish)
-            _dishes.value = service.getDishes()
         }
     }
 
     fun deleteDish(id: Int) {
+        _dishes.value.map { it.id != id }
         viewModelScope.launch {
             service.deleteDish(id)
-            _dishes.value = service.getDishes()
         }
     }
 }

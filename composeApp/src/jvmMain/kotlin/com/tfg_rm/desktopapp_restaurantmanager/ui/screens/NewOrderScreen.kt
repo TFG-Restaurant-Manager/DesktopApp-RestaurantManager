@@ -254,7 +254,7 @@ private fun StepDishesScreen(viewModel: NewOrderViewModel) {
     var selectedCategory by remember { mutableStateOf("Todos") }
     var dishToCustomize  by remember { mutableStateOf<Dishes?>(null) }
 
-    val categories = listOf("Todos") + dishes.map { it.categoryName }.distinct().sorted()
+    val categories = listOf("Todos") + dishes.map { it.categoryName }.distinct().sortedBy { it }
     val displayed  = if (selectedCategory == "Todos") dishes
                      else dishes.filter { it.categoryName == selectedCategory }
 
@@ -275,10 +275,10 @@ private fun StepDishesScreen(viewModel: NewOrderViewModel) {
                         modifier = Modifier
                             .background(if (sel) orange else grayBg, RoundedCornerShape(20.dp))
                             .border(1.dp, if (sel) orange else grayBorder, RoundedCornerShape(20.dp))
-                            .clickable { selectedCategory = cat }
+                            .clickable { selectedCategory = cat!! }
                             .padding(horizontal = 16.dp, vertical = 6.dp)
                     ) {
-                        Text(cat, color = if (sel) Color.White else Color(0xFF374151), fontSize = 13.sp)
+                        Text(cat!!, color = if (sel) Color.White else Color(0xFF374151), fontSize = 13.sp)
                     }
                 }
             }
@@ -381,7 +381,7 @@ private fun DishCatalogueCard(dish: Dishes, onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(dish.name, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
-                Text(dish.description.take(60) + if (dish.description.length > 60) "…" else "",
+                Text(dish.description?.take(60) + if ((dish.description?.length ?: 0) > 60) "…" else "",
                     style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
             }
             Text("%.2f €".format(dish.price), fontWeight = FontWeight.Bold, color = orange)

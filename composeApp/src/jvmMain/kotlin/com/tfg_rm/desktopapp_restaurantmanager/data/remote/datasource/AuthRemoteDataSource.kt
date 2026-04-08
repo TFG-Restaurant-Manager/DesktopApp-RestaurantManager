@@ -1,4 +1,4 @@
-package com.tfg_rm.desktopapp_restaurantmanager.data.remote
+package com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.EmployeeLoginRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.LoginResponse

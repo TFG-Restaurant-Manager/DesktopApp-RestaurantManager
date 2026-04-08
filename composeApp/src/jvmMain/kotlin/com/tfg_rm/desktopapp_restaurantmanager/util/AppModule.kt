@@ -1,8 +1,8 @@
 package com.tfg_rm.desktopapp_restaurantmanager.util
 
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.AuthRemoteDataSource
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.EmployeesRemoteDataSource
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.OrdersRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.AuthRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.EmployeesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.OrdersRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.TokenProvider
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.AuthRepository
@@ -17,15 +17,13 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
-import com.tfg_rm.desktopapp_restaurantmanager.domain.service.ExampleService
-import com.tfg_rm.desktopapp_restaurantmanager.data.repository.ExampleRepository
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.OrdersRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.EmployeesRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.ScheduleRemoteDataSource
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.DishesRemoteDataSource
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.TablesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.ScheduleRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.DishesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.TablesRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.IngredientsRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.IngredientsService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.DishesRepository
@@ -39,7 +37,6 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrderHistoryServic
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EconomyService
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EconomyViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
-import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.ExampleViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.InventoryViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.DishesViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.LoginViewModel
@@ -89,8 +86,6 @@ val appModule = module {
 
     singleOf(::AuthRemoteDataSource)
     singleOf(::AuthRepository)
-    singleOf(::ExampleService)
-    singleOf(::ExampleRepository)
     singleOf(::OrdersRemoteDataSource)
     singleOf(::OrdersRepository)
     singleOf(::OrdersService)
@@ -112,7 +107,6 @@ val appModule = module {
     singleOf(::OrderHistoryService)
     singleOf(::EconomyService)
 
-    viewModelOf(::ExampleViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::OrdersViewModel)
     viewModelOf(::TablesViewModel)

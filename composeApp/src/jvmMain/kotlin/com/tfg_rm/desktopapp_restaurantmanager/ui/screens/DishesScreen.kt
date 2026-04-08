@@ -41,7 +41,7 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
     var editTarget       by remember { mutableStateOf<Dishes?>(null) }
     var deleteTarget     by remember { mutableStateOf<Dishes?>(null) }
 
-    val categories       = dishes.map { it.categoryName }.distinct().sorted()
+    val categories       = dishes.map { it.categoryName }.distinct().sortedBy { it }
     val displayed        = if (selectedCategory == Strings.t("screen.dishes.filter.all")) dishes
                            else dishes.filter { it.categoryName == selectedCategory }
     val availableCount   = dishes.count { it.available }
@@ -94,7 +94,7 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
             val allFilter = Strings.t("screen.dishes.filter.all")
             item { DishFilterPill(allFilter, selectedCategory == allFilter) { selectedCategory = allFilter } }
             items(categories) { cat ->
-                DishFilterPill(cat, selectedCategory == cat) { selectedCategory = cat }
+                DishFilterPill(cat!!, selectedCategory == cat) { selectedCategory = cat }
             }
         }
 
@@ -240,12 +240,12 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
     ) {
         Text(dish.name,        Modifier.weight(2f),  fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodyMedium)
         Text(
-            text     = dish.description.take(70) + if (dish.description.length > 70) "…" else "",
+            text     = dish.description?.take(70) + if ((dish.description?.length ?: 0) > 70) "…" else "",
             modifier = Modifier.weight(3f),
             color    = MaterialTheme.colorScheme.onSurfaceVariant,
             style    = MaterialTheme.typography.bodySmall
         )
-        Text(dish.categoryName, Modifier.weight(1.5f), style = MaterialTheme.typography.bodySmall)
+        Text(dish.categoryName!!, Modifier.weight(1.5f), style = MaterialTheme.typography.bodySmall)
         Text("%.2f €".format(dish.price), Modifier.weight(1f), fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodySmall)
         Text(
             text     = ingredientsSummary,
@@ -489,12 +489,12 @@ private fun DishFormDialog(
                     if (valid) {
                         onSave(
                             Dishes(
-                                id          = dish?.id ?: 0,
-                                name        = name.trim(),
+                                id = dish?.id ?: 0,
+                                name = name.trim(),
                                 description = description.trim(),
                                 categoryName = category.trim(),
-                                price       = priceVal!!,
-                                available   = available,
+                                price = priceVal!!,
+                                available = available,
                                 ingredients = dishIngredients
                             )
                         )

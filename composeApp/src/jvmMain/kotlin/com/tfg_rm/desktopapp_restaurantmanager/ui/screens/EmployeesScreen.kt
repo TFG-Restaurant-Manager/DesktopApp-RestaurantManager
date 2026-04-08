@@ -26,7 +26,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -51,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.CreateEmployeeState
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
+import kotlin.collections.listOf
 
 @Composable
 fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier) {
@@ -200,7 +200,7 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("☎", color = Color(0xFF94A3B8), fontSize = 14.sp)
                                     Spacer(Modifier.width(8.dp))
-                                    Text(emp.phone, color = Color(0xFF64748B), fontSize = 14.sp)
+                                    Text(emp.phone!!, color = Color(0xFF64748B), fontSize = 14.sp)
                                 }
                             }
                             
@@ -309,7 +309,7 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(text = "Email: ${emp.email}", color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
                 Spacer(modifier = Modifier.height(12.dp))
-                TextField(value = phone, onValueChange = { phone = it }, label = { Text(text = "Teléfono") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = phone!!, onValueChange = { phone = it }, label = { Text(text = "Teléfono") }, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
@@ -428,7 +428,8 @@ private fun NewEmployeeDialog(
                 onClick = {
                     val emp = Employee(
                         id = 0, roleName = role, name = name, email = email,
-                        phone = phone, code = code, startDate = startDate
+                        phone = phone, code = code, startDate = startDate, active = true,
+                        schedules = listOf()
                     )
                     onSave(emp, password)
                 },

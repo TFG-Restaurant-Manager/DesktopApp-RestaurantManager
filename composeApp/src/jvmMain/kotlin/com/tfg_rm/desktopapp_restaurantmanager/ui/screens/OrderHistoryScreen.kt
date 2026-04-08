@@ -134,7 +134,7 @@ private fun OrderHistoryRow(order: Order) {
     val fmt          = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale("es"))
     val itemsSummary = if (order.orderItemsList.isEmpty()) "—"
                        else order.orderItemsList.joinToString(", ") {
-                           "${it.dish.name} ×${it.quantity}"
+                           "${it.dishName} ×${it.quantity}"
                        }.let { if (it.length > 60) it.take(57) + "…" else it }
 
     Row(

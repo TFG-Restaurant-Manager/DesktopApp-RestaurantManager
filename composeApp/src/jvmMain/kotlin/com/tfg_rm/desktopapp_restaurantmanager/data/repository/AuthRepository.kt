@@ -1,6 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.AuthRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.AuthRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.TokenProvider
 
 class AuthRepository(
@@ -8,10 +8,8 @@ class AuthRepository(
     private val tokenProvider: TokenProvider
 ) {
     suspend fun requestToken(code: String, password: String) {
-        // val response = remote.requestToken(code = code, password = password)
-        // tokenProvider.setToken(response.token)
-
-        tokenProvider.setToken("simulated-token-$code")
+        val response = remote.requestToken(code = code, password = password)
+        tokenProvider.setToken(response.token)
     }
 
     suspend fun logout() {

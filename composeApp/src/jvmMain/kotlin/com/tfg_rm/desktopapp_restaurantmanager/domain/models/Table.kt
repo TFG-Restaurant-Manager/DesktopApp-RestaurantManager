@@ -21,5 +21,6 @@ data class Table(
     var posX: Int,
     var posY: Int,
     val active: Boolean = true,
-    val sectionId: Int? = null
+    val section: String? = null,
+    val status: String?
 )

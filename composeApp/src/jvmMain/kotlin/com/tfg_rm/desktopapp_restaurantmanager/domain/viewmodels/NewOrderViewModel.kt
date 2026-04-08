@@ -119,16 +119,16 @@ class NewOrderViewModel(
                 val fullNotes = listOfNotNull(draft.notes.ifBlank { null }, modNotes.ifBlank { null }).joinToString("; ")
                 OrderItem(
                     id        = nextItemId++,
-                    dish      = draft.dish,
+                    dishId      = draft.dish.id,
                     unitPrice = draft.dish.price,
                     notes     = fullNotes.ifBlank { null },
-                    quantity  = draft.quantity
+                    quantity  = draft.quantity,
+                    dishName = draft.dish.name
                 )
             }
             val total = items.sumOf { it.unitPrice * it.quantity }
             val order = Order(
                 id               = 0,
-                restaurantId     = 1,
                 tableId          = _selectedTableId.value ?: 0,
                 status           = "CREATED",
                 total            = total,

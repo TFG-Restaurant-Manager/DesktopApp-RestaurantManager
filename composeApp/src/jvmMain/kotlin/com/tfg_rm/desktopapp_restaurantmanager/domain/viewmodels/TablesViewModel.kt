@@ -34,7 +34,7 @@ class TablesViewModel(
         viewModelScope.launch {
             val list = _tables.value.map { it.id }
             val nextId = (1..list.size + 1).first { it !in list.toSet() }
-            val newTable = Table(id = nextId, capacity = capacity, posX = posX, posY = posY)
+            val newTable = Table(id = nextId, capacity = capacity, posX = posX, posY = posY, status = "AVAILABLE")
             service.addTable(newTable)
             _tables.value.plus(newTable)
         }

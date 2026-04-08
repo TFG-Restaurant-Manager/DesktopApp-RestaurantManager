@@ -1,4 +1,4 @@
-package com.tfg_rm.desktopapp_restaurantmanager.data.remote
+package com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableResponse
