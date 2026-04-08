@@ -2,7 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.EmployeesRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.EmployeeRegisterRequest
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.toDomain
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.mapper.toDomain
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 
 class EmployeesRepository(

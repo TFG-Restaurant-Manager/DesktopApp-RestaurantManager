@@ -42,8 +42,9 @@ class ScheduleViewModel(
 
     fun loadSchedule() {
         viewModelScope.launch {
-            _employees.value = employeesService.getEmployees()
-            _shifts.value = scheduleService.getShifts()
+            val emps = employeesService.getEmployees()
+            _employees.value = emps
+            _shifts.value = emps.flatMap { it.shifts }
         }
     }
 
@@ -83,7 +84,10 @@ class ScheduleViewModel(
             }.onSuccess {
                 _saveState.value = SaveScheduleState.Success
             }.onFailure {
-                _saveState.value = SaveScheduleState.Error(it.message ?: "Error desconocido")
+                // Present a friendlier, less noisy error message to the UI.
+                _saveState.value = SaveScheduleState.Error(
+                    "Error al guardar horarios. Comprueba la conexión y la URL del servidor."
+                )
             }
         }
     }

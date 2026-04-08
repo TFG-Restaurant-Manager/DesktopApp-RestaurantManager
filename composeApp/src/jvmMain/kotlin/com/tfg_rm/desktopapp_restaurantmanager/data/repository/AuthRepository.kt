@@ -8,10 +8,10 @@ class AuthRepository(
     private val tokenProvider: TokenProvider
 ) {
     suspend fun requestToken(code: String, password: String) {
-        // val response = remote.requestToken(code = code, password = password)
-        // tokenProvider.setToken(response.token)
+        val response = remote.requestToken(code = code, password = password)
+        tokenProvider.setToken(response.token)
 
-        tokenProvider.setToken("simulated-token-$code")
+        //tokenProvider.setToken("simulated-token-$code")
     }
 
     suspend fun logout() {

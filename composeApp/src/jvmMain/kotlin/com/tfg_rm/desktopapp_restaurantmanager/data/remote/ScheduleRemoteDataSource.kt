@@ -10,7 +10,7 @@ import io.ktor.http.contentType
 class ScheduleRemoteDataSource(private val client: HttpClient) {
 
     suspend fun saveSchedules(requests: List<WorkScheduleRequest>) {
-        client.post("") {
+        client.post("api/work-schedules") {
             contentType(ContentType.Application.Json)
             setBody(requests)
         }

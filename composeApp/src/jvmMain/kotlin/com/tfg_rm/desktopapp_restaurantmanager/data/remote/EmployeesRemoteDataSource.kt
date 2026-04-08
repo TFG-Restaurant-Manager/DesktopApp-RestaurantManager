@@ -13,11 +13,11 @@ import io.ktor.http.contentType
 class EmployeesRemoteDataSource(
     private val client: HttpClient
 ) {
-    suspend fun getEmployees(restaurantId: Int = 1): List<EmployeeWithSchedulesResponse> =
-        client.get("employee/restaurant/$restaurantId").body()
+    suspend fun getEmployees(): List<EmployeeWithSchedulesResponse> =
+        client.get("api/employee").body()
 
     suspend fun registerEmployee(request: EmployeeRegisterRequest): EmployeeWithSchedulesResponse {
-        return client.post("employee/register") {
+        return client.post("api/employee/register") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()

@@ -65,7 +65,7 @@ val appModule = module {
             }
 
             defaultRequest {
-                url("https://investigation-expects-formula-criterion.trycloudflare.com/")
+                url("https://conf-placed-agency-friendship.trycloudflare.com/")
                 tokenProvider.getToken()?.let {
                     header("Authorization", "Bearer $it")
                 }
