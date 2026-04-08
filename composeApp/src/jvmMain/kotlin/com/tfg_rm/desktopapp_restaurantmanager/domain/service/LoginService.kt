@@ -1,7 +1,16 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.service
 
-class LoginService {
-    suspend fun loadInitialData() {
-        // No-op stub for login initialization. Implement auth logic if needed.
-    }
+import com.tfg_rm.desktopapp_restaurantmanager.data.repository.AuthRepository
+
+class LoginService(
+    private val authRepository: AuthRepository
+) {
+    suspend fun requestToken(code: String, password: String) =
+        authRepository.requestToken(code = code, password = password)
+
+    suspend fun logout() =
+        authRepository.logout()
+
+    fun loadToken(): Boolean =
+        authRepository.loadToken()
 }

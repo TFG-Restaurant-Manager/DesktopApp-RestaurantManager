@@ -1,8 +1,12 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.TablesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 
-class TablesRepository {
+class TablesRepository(
+    private val remoteDataSource: TablesRemoteDataSource
+) {
 
     private var nextId = 7
 
@@ -19,9 +23,20 @@ class TablesRepository {
     suspend fun getTables(): List<Table> = tables.toList()
 
     suspend fun addTable(table: Table): Table {
-        val withId = table.copy(id = nextId++)
-        tables.add(withId)
-        return withId
+        val request = TableCreateRequest(
+            tableName    = table.name.ifBlank { "Mesa $nextId" },
+            capacity     = table.capacity,
+            posX         = table.posX,
+            posY         = table.posY,
+            restaurantId = table.restaurantId
+        )
+        val response = remoteDataSource.createTable(request)
+        val withServerId = table.copy(
+            id   = response.tableId.toInt(),
+            name = response.tableName
+        )
+        tables.add(withServerId)
+        return withServerId
     }
 
     suspend fun updateTable(updated: Table) {

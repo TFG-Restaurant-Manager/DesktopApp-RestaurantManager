@@ -26,11 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.FlatEntry
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrdersViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.OrderItemView
-import java.time.Duration
-import java.time.LocalDateTime
 
 
 @Composable
@@ -49,14 +48,14 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
         // Top indicators row
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IndicatorCard(modifier = Modifier.weight(1f), label = "Orders Pendientes", value = orders.size.toString(), color = Color(0xFFFF7043))
-            IndicatorCard(modifier = Modifier.weight(1f), label = "Tiempo Promedio", value = averageTimeLabel(orders), color = Color(0xFF4CAF50))
+            IndicatorCard(modifier = Modifier.weight(1f), label = "Tiempo Promedio", value = viewModel.averageTimeLabel(orders), color = Color(0xFF4CAF50))
             IndicatorCard(modifier = Modifier.weight(1f), label = "Mesas Activas", value = orders.map { it.tableId }.distinct().size.toString(), color = Color(0xFF2196F3))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Alert if any order > 20 min
-        if (orders.any { elapsedMinutes(it) > 20 }) {
+        if (orders.any { viewModel.elapsedMinutes(it) > 20 }) {
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)), modifier = Modifier.fillMaxWidth()) {
                 Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Spacer(modifier = Modifier.size(8.dp))
@@ -71,10 +70,7 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
         }
 
         // Orders grid — one card per item unit, numbered sequentially 1, 2, 3…
-        data class FlatEntry(val displayNumber: Int, val order: Order, val item: com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem)
-        val flatItems = orders
-            .flatMap { order -> order.orderItemsList.flatMap { item -> List(item.quantity) { order to item } } }
-            .mapIndexed { idx, (order, item) -> FlatEntry(idx + 1, order, item) }
+        val flatItems = viewModel.buildFlatEntries(orders)
         LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 260.dp), modifier = Modifier.fillMaxHeight()) {
             items(flatItems) { entry ->
                 OrderItemView(
@@ -92,7 +88,7 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
 
 
 @Composable
-private fun IndicatorCard(modifier: Modifier = Modifier, label: String, value: String, color: Color) {
+fun IndicatorCard(modifier: Modifier = Modifier, label: String, value: String, color: Color) {
     Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(text = label, style = MaterialTheme.typography.bodySmall)
@@ -102,22 +98,5 @@ private fun IndicatorCard(modifier: Modifier = Modifier, label: String, value: S
     }
 }
 
-private fun elapsedMinutes(order: Order): Long {
-    return try {
-        Duration.between(order.createdAt, LocalDateTime.now()).toMinutes()
-    } catch (e: Exception) { 0 }
-}
 
-private fun elapsedSecondsPart(order: Order): Long {
-    return try {
-        val d = Duration.between(order.createdAt, LocalDateTime.now())
-        d.seconds % 60
-    } catch (e: Exception) { 0 }
-}
-
-private fun averageTimeLabel(orders: List<Order>): String {
-    if (orders.isEmpty()) return "0 min"
-    val avg = orders.map { elapsedMinutes(it) }.average().toInt()
-    return "$avg min"
-}
 

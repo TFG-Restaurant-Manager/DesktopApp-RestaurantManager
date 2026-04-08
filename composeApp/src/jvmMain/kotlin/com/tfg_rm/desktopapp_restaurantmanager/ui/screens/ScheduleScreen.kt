@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.SaveScheduleState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -85,20 +87,34 @@ private val dayNames = mapOf(
 
 @Composable
 fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) {
-    val employees by viewModel.employees.collectAsState()
-    val shifts    by viewModel.shifts.collectAsState()
+    val employees    by viewModel.employees.collectAsState()
+    val shifts       by viewModel.shifts.collectAsState()
+    val weekStart    by viewModel.currentWeekStart.collectAsState()
+    val saveState    by viewModel.saveState.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.loadSchedule() }
+
+    // Auto-reset success state after showing it briefly
+    LaunchedEffect(saveState) {
+        if (saveState is SaveScheduleState.Success) {
+            kotlinx.coroutines.delay(2000)
+            viewModel.resetSaveState()
+        }
+    }
 
     // Editing state: pair of (employee, day) being edited
     var editTarget by remember { mutableStateOf<Pair<Employee, DayOfWeek>?>(null) }
 
-    // Current week range
-    val today      = LocalDate.now()
-    val weekStart  = today.with(DayOfWeek.MONDAY)
-    val weekEnd    = today.with(DayOfWeek.SUNDAY)
-    val fmt        = DateTimeFormatter.ofPattern("d MMM yyyy", Locale("es"))
-    val totalHours = shifts.sumOf {
+    val weekEnd  = weekStart.plusDays(6)
+    val fmt      = DateTimeFormatter.ofPattern("d MMM yyyy", Locale("es"))
+
+    // Only shifts belonging to the currently viewed week
+    val weekShifts = shifts.filter {
+        val date = it.startDateTime.toLocalDate()
+        !date.isBefore(weekStart) && !date.isAfter(weekEnd)
+    }
+
+    val totalHours = weekShifts.sumOf {
         val mins = java.time.Duration.between(it.startDateTime, it.endDateTime).toMinutes()
         if (mins < 0) 0L else mins
     } / 60
@@ -150,6 +166,60 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF0F172A)
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    // Week navigation + save
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = { viewModel.prevWeek() },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Text(text = "←", fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.nextWeek() },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Text(text = "→", fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { viewModel.saveSchedule() },
+                            enabled = saveState !is SaveScheduleState.Loading,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            if (saveState is SaveScheduleState.Loading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(
+                                    text = if (saveState is SaveScheduleState.Success) "✓ Guardado" else "Guardar",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                    if (saveState is SaveScheduleState.Error) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = (saveState as SaveScheduleState.Error).message,
+                            color = Color(0xFFEF4444),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }
@@ -246,7 +316,8 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
                                 
                                 // Day columns
                                 DAYS.forEach { day ->
-                                    val shift = shifts.find { it.employeeRestaurantId == emp.id && it.startDateTime.dayOfWeek == day }
+                                    val shiftDate = weekStart.plusDays((day.value - 1).toLong())
+                                    val shift = weekShifts.find { it.employeeRestaurantId == emp.id && it.startDateTime.toLocalDate() == shiftDate }
                                     Box(modifier = Modifier.width(140.dp).padding(horizontal = 8.dp)) {
                                         Box(
                                             modifier = Modifier
@@ -288,10 +359,12 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
 
     // Shift edit dialog
     editTarget?.let { (emp, day) ->
+        val shiftDate = weekStart.plusDays((day.value - 1).toLong())
         ShiftEditDialog(
             employee = emp,
             day = day,
-            currentShift = shifts.find { it.employeeRestaurantId == emp.id && it.startDateTime.dayOfWeek == day },
+            weekStart = weekStart,
+            currentShift = weekShifts.find { it.employeeRestaurantId == emp.id && it.startDateTime.toLocalDate() == shiftDate },
             onDismiss = { editTarget = null },
             onSave = { shift ->
                 viewModel.setShift(shift)
@@ -309,6 +382,7 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
 private fun ShiftEditDialog(
     employee: Employee,
     day: DayOfWeek,
+    weekStart: LocalDate,
     currentShift: Shift?,
     onDismiss: () -> Unit,
     onSave: (Shift) -> Unit,
@@ -425,7 +499,7 @@ private fun ShiftEditDialog(
                 onClick = {
                     try {
                         val fmt2 = DateTimeFormatter.ofPattern("HH:mm")
-                        val shiftDate = LocalDate.now().with(DayOfWeek.MONDAY).plusDays((day.value - 1).toLong())
+                        val shiftDate = weekStart.plusDays((day.value - 1).toLong())
                         val startTime = LocalTime.parse(startText.trim(), fmt2)
                         val endTime   = LocalTime.parse(endText.trim(), fmt2)
                         if (!endTime.isAfter(startTime)) { error = Strings.t("screen.shift.error.end_after_start") ; return@Button }

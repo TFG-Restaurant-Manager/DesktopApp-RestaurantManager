@@ -12,6 +12,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.LocalDate
+
+sealed class SaveScheduleState {
+    object Idle : SaveScheduleState()
+    object Loading : SaveScheduleState()
+    object Success : SaveScheduleState()
+    data class Error(val message: String) : SaveScheduleState()
+}
 
 class ScheduleViewModel(
     private val scheduleService: ScheduleService,
@@ -25,6 +33,12 @@ class ScheduleViewModel(
 
     private val _shifts = MutableStateFlow<List<Shift>>(emptyList())
     val shifts: StateFlow<List<Shift>> = _shifts.asStateFlow()
+
+    private val _currentWeekStart = MutableStateFlow(LocalDate.now().with(DayOfWeek.MONDAY))
+    val currentWeekStart: StateFlow<LocalDate> = _currentWeekStart.asStateFlow()
+
+    private val _saveState = MutableStateFlow<SaveScheduleState>(SaveScheduleState.Idle)
+    val saveState: StateFlow<SaveScheduleState> = _saveState.asStateFlow()
 
     fun loadSchedule() {
         viewModelScope.launch {
@@ -45,6 +59,37 @@ class ScheduleViewModel(
             scheduleService.removeShift(employeeRestaurantId, day)
             _shifts.value = scheduleService.getShifts()
         }
+    }
+
+    fun nextWeek() {
+        _currentWeekStart.value = _currentWeekStart.value.plusWeeks(1)
+    }
+
+    fun prevWeek() {
+        _currentWeekStart.value = _currentWeekStart.value.minusWeeks(1)
+    }
+
+    fun saveSchedule() {
+        viewModelScope.launch {
+            _saveState.value = SaveScheduleState.Loading
+            runCatching {
+                val weekStart = _currentWeekStart.value
+                val weekEnd = weekStart.plusDays(6)
+                val weekShifts = _shifts.value.filter {
+                    val date = it.startDateTime.toLocalDate()
+                    !date.isBefore(weekStart) && !date.isAfter(weekEnd)
+                }
+                scheduleService.saveShifts(weekShifts)
+            }.onSuccess {
+                _saveState.value = SaveScheduleState.Success
+            }.onFailure {
+                _saveState.value = SaveScheduleState.Error(it.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun resetSaveState() {
+        _saveState.value = SaveScheduleState.Idle
     }
 
     fun clear() {}

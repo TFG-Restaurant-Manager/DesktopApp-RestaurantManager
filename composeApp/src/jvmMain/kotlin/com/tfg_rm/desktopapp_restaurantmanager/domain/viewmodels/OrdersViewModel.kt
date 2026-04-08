@@ -3,12 +3,15 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.FlatEntry
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.LocalDateTime
 
 class OrdersViewModel(
     val service: OrdersService
@@ -48,6 +51,25 @@ class OrdersViewModel(
             _orders.value = service.getOrders()
         }
     }
+
+    fun elapsedMinutes(order: Order): Long = try {
+        Duration.between(order.createdAt, LocalDateTime.now()).toMinutes()
+    } catch (e: Exception) { 0 }
+
+    fun elapsedSecondsPart(order: Order): Long = try {
+        Duration.between(order.createdAt, LocalDateTime.now()).seconds % 60
+    } catch (e: Exception) { 0 }
+
+    fun averageTimeLabel(orders: List<Order>): String {
+        if (orders.isEmpty()) return "0 min"
+        val avg = orders.map { elapsedMinutes(it) }.average().toInt()
+        return "$avg min"
+    }
+
+    fun buildFlatEntries(orders: List<Order>): List<FlatEntry> =
+        orders
+            .flatMap { order -> order.orderItemsList.flatMap { item -> List(item.quantity) { order to item } } }
+            .mapIndexed { idx, (order, item) -> FlatEntry(idx + 1, order, item) }
 
     fun completeOrderItem(orderId: Int, itemId: Int) {
         viewModelScope.launch {
