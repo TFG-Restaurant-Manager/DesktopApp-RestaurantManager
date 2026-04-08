@@ -1,7 +1,10 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.service
 
-class OrderHistoryService {
-    suspend fun loadInitialData() {
-        // No-op stub for order history; implement real loading if/when needed.
-    }
+import com.tfg_rm.desktopapp_restaurantmanager.data.repository.OrdersRepository
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
+
+class OrderHistoryService(
+    private val ordersRepository: OrdersRepository
+) {
+    suspend fun getHistory(): List<Order> = ordersRepository.getOrderHistory()
 }

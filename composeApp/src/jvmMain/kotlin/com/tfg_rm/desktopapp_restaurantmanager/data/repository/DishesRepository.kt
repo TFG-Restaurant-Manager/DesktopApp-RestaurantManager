@@ -1,8 +1,13 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.DishesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.DishCreateRequest
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.DishIngredientRequest
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
 
-class DishesRepository {
+class DishesRepository(
+    private val remoteDataSource: DishesRemoteDataSource
+) {
     private var nextId = 6
 
     private val dishes = mutableListOf(
@@ -16,9 +21,19 @@ class DishesRepository {
     suspend fun getDishes(): List<Dishes> = dishes.toList()
 
     suspend fun addDish(dish: Dishes): Dishes {
-        val withId = dish.copy(id = nextId++)
-        dishes.add(withId)
-        return withId
+        val request = DishCreateRequest(
+            name         = dish.name,
+            description  = dish.description,
+            categoryName = dish.categoryName,
+            price        = dish.price,
+            available    = dish.available,
+            restaurantId = dish.restaurantId,
+            ingredients  = dish.ingredients.map { DishIngredientRequest(it.ingredient.id, it.quantity) }
+        )
+        val response = remoteDataSource.createDish(request)
+        val withServerId = dish.copy(id = response.id.toInt())
+        dishes.add(withServerId)
+        return withServerId
     }
 
     suspend fun updateDish(dish: Dishes) {

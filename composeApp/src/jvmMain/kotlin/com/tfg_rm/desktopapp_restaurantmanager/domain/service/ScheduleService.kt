@@ -13,4 +13,6 @@ class ScheduleService(
 
     suspend fun removeShift(employeeRestaurantId: Int, day: DayOfWeek) =
         repository.removeShift(employeeRestaurantId, day)
+
+    suspend fun saveShifts(shifts: List<Shift>) = repository.saveShifts(shifts)
 }

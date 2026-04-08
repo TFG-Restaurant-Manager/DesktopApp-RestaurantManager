@@ -1,6 +1,8 @@
 package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +22,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,20 +45,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.CreateEmployeeState
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
 
 @Composable
 fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier) {
-    val title by viewModel.title.collectAsState()
     val employees by viewModel.employees.collectAsState()
+    val createState by viewModel.createState.collectAsState()
+
+    val editingEmployee = remember { mutableStateOf<Employee?>(null) }
+    val deletingEmployee = remember { mutableStateOf<Employee?>(null) }
+    val creatingEmployee = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.loadEmployees() }
-    
+    LaunchedEffect(createState) {
+        if (createState is CreateEmployeeState.Success) {
+            creatingEmployee.value = false
+            viewModel.resetCreateState()
+        }
+    }
+
     // Fallback static metrics
-    val activeEmployees = if (employees.isNotEmpty()) employees.size - 1 else 0
+    val activeEmployees = employees.count { it.active }
     val totalPayroll = employees.size * 1500
 
     Column(
@@ -61,9 +78,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        val editingEmployee = remember { mutableStateOf<Employee?>(null) }
-        val deletingEmployee = remember { mutableStateOf<Employee?>(null) }
-        val creatingEmployee = remember { mutableStateOf(false) }
 
         // Header
         Row(
@@ -232,10 +246,16 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
 
         // Dialogs
         if (creatingEmployee.value) {
-            NewEmployeeDialog(onDismiss = { creatingEmployee.value = false }, onSave = { newEmp ->
-                viewModel.addEmployee(newEmp)
-                creatingEmployee.value = false
-            })
+            NewEmployeeDialog(
+                createState = createState,
+                onDismiss = {
+                    creatingEmployee.value = false
+                    viewModel.resetCreateState()
+                },
+                onSave = { newEmp, password ->
+                    viewModel.addEmployee(newEmp, password)
+                }
+            )
         }
 
         editingEmployee.value?.let { emp ->
@@ -300,32 +320,135 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
 }
 
 @Composable
-private fun NewEmployeeDialog(onDismiss: () -> Unit, onSave: (Employee) -> Unit) {
-    var role by remember { mutableStateOf("") }
+private fun NewEmployeeDialog(
+    createState: CreateEmployeeState,
+    onDismiss: () -> Unit,
+    onSave: (Employee, String) -> Unit
+) {
+    val roles = listOf("MANAGER", "WAITER", "COOKER", "ADMIN")
+    var role by remember { mutableStateOf(roles[0]) }
+    var roleExpanded by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf("") }
+
+    val isLoading = createState is CreateEmployeeState.Loading
+    val errorMsg = (createState as? CreateEmployeeState.Error)?.msg
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isLoading) onDismiss() },
         title = { Text(text = "Añadir empleado", fontWeight = FontWeight.Bold) },
         text = {
-            Column {
-                TextField(value = role, onValueChange = { role = it }, label = { Text(text = "Rol") }, modifier = Modifier.fillMaxWidth())
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(text = "Nombre") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                TextField(value = name, onValueChange = { name = it }, label = { Text(text = "Nombre") }, modifier = Modifier.fillMaxWidth())
+                TextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(text = "Email") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                TextField(value = email, onValueChange = { email = it }, label = { Text(text = "Email") }, modifier = Modifier.fillMaxWidth())
+                TextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text(text = "Teléfono (opcional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                TextField(value = phone, onValueChange = { phone = it }, label = { Text(text = "Teléfono") }, modifier = Modifier.fillMaxWidth())
+                TextField(
+                    value = code,
+                    onValueChange = { if (it.length <= 10) code = it.filter { c -> c.isDigit() } },
+                    label = { Text(text = "Código empleado (10 dígitos)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(text = "Contraseña") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
+                    value = startDate,
+                    onValueChange = { startDate = it },
+                    label = { Text(text = "Fecha de inicio (AAAA-MM-DD)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                // Role dropdown
+                Box {
+                    OutlinedButton(
+                        onClick = { if (!isLoading) roleExpanded = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                    ) {
+                        Text(text = role, color = Color(0xFF334155))
+                    }
+                    DropdownMenu(
+                        expanded = roleExpanded,
+                        onDismissRequest = { roleExpanded = false }
+                    ) {
+                        roles.forEach { r ->
+                            DropdownMenuItem(
+                                text = { Text(text = r) },
+                                onClick = { role = r; roleExpanded = false }
+                            )
+                        }
+                    }
+                }
+                if (errorMsg != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMsg,
+                        color = Color(0xFFEF4444),
+                        fontSize = 13.sp
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                val emp = Employee(id = 0, roleName = role, name = name, email = email, phone = phone)
-                onSave(emp)
-            }) { Text(text = "Crear", color = Color(0xFFF97316)) }
+            TextButton(
+                onClick = {
+                    val emp = Employee(
+                        id = 0, roleName = role, name = name, email = email,
+                        phone = phone, code = code, startDate = startDate
+                    )
+                    onSave(emp, password)
+                },
+                enabled = !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color(0xFFF97316)
+                    )
+                } else {
+                    Text(text = "Crear", color = Color(0xFFF97316))
+                }
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(text = "Cancelar", color = Color(0xFF64748B)) } }
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isLoading) {
+                Text(text = "Cancelar", color = Color(0xFF64748B))
+            }
+        }
     )
 }

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -30,6 +31,10 @@ kotlin {
             implementation("io.insert-koin:koin-compose:4.2.0")
             implementation("io.insert-koin:koin-compose-viewmodel:4.2.0")
             implementation("io.insert-koin:koin-compose-viewmodel-navigation:4.2.0")
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
     }
 }

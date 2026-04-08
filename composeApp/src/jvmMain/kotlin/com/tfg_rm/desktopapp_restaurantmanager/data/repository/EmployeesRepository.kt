@@ -1,15 +1,14 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.EmployeesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.EmployeeRegisterRequest
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.toDomain
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 
-class EmployeesRepository {
-    private var nextId = 4
-
-    private val employees = mutableListOf(
-        Employee(id = 1, roleName = "Cocinero",  name = "Ana López",     email = "ana.lopez@example.com",     phone = "+34 600 111 222", active = true),
-        Employee(id = 2, roleName = "Camarero",  name = "Carlos Martín", email = "carlos.martin@example.com", phone = "+34 611 222 333", active = true),
-        Employee(id = 3, roleName = "Gerente",   name = "Laura Ruiz",    email = "laura.ruiz@example.com",    phone = "+34 622 333 444", active = true)
-    )
+class EmployeesRepository(
+    private val remote: EmployeesRemoteDataSource
+) {
+    private val employees = mutableListOf<Employee>()
 
     suspend fun getEmployees(): List<Employee> = employees.toList()
 
@@ -22,9 +21,19 @@ class EmployeesRepository {
         employees.removeAll { it.email == email }
     }
 
-    suspend fun addEmployee(employee: Employee): Employee {
-        val withId = employee.copy(id = nextId++)
-        employees.add(withId)
-        return withId
+    suspend fun addEmployee(employee: Employee, password: String): Employee {
+        val request = EmployeeRegisterRequest(
+            name = employee.name,
+            roleName = employee.roleName,
+            email = employee.email,
+            phone = employee.phone.ifEmpty { null },
+            startDate = employee.startDate,
+            code = employee.code,
+            password = password
+        )
+        val response = remote.registerEmployee(request)
+        val created = response.toDomain()
+        employees.add(created)
+        return created
     }
 }

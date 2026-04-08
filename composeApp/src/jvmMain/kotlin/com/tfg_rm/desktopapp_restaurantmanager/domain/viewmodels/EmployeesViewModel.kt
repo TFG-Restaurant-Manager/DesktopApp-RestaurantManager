@@ -10,6 +10,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+sealed class CreateEmployeeState {
+    object Idle : CreateEmployeeState()
+    object Loading : CreateEmployeeState()
+    object Success : CreateEmployeeState()
+    data class Error(val msg: String) : CreateEmployeeState()
+}
+
 class EmployeesViewModel(
     val service: EmployeesService
 ) : ViewModel() {
@@ -19,14 +26,17 @@ class EmployeesViewModel(
     private val _employees = MutableStateFlow<List<Employee>>(emptyList())
     val employees: StateFlow<List<Employee>> = _employees.asStateFlow()
 
+    private val _createState = MutableStateFlow<CreateEmployeeState>(CreateEmployeeState.Idle)
+    val createState: StateFlow<CreateEmployeeState> = _createState.asStateFlow()
+
     fun loadEmployees() {
         viewModelScope.launch {
             _employees.value = service.getEmployees()
         }
     }
 
-    fun clear() {
-
+    fun resetCreateState() {
+        _createState.value = CreateEmployeeState.Idle
     }
 
     fun updateEmployee(updated: Employee) {
@@ -43,10 +53,17 @@ class EmployeesViewModel(
         }
     }
 
-    fun addEmployee(employee: Employee) {
+    fun addEmployee(employee: Employee, password: String) {
+        _createState.value = CreateEmployeeState.Loading
         viewModelScope.launch {
-            service.addEmployee(employee)
-            _employees.value = service.getEmployees()
+            try {
+                service.addEmployee(employee, password)
+                _employees.value = service.getEmployees()
+                _createState.value = CreateEmployeeState.Success
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _createState.value = CreateEmployeeState.Error(e.message ?: "Error al crear el empleado")
+            }
         }
     }
 }

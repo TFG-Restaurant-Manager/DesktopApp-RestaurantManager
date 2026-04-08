@@ -1,5 +1,21 @@
 package com.tfg_rm.desktopapp_restaurantmanager.util
 
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.AuthRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.EmployeesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.OrdersRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.TokenProvider
+import com.tfg_rm.desktopapp_restaurantmanager.data.repository.AuthRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.header
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.ExampleService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.ExampleRepository
@@ -7,6 +23,9 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.repository.OrdersRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.EmployeesRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.ScheduleRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.DishesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.TablesRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.IngredientsRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.IngredientsService
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.DishesRepository
@@ -33,12 +52,54 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 
 val appModule = module {
+    // ── Network ─────────────────────────────────────────────────────────────
+    single { TokenProvider() }
+
+    single {
+        val tokenProvider = get<TokenProvider>()
+        HttpClient(OkHttp) {
+            expectSuccess = true
+
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
+
+            defaultRequest {
+                url("https://investigation-expects-formula-criterion.trycloudflare.com/")
+                tokenProvider.getToken()?.let {
+                    header("Authorization", "Bearer $it")
+                }
+            }
+
+            HttpResponseValidator {
+                handleResponseExceptionWithRequest { exception, _ ->
+                    val clientException = exception as? ClientRequestException ?: return@handleResponseExceptionWithRequest
+                    val status = clientException.response.status.value
+                    // Only treat as session expiry when there is already a token
+                    if ((status == 401 || status == 403) && tokenProvider.getToken() != null) {
+                        runBlocking {
+                            tokenProvider.clearToken()
+                            SessionManager.notifySessionExpired()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    singleOf(::AuthRemoteDataSource)
+    singleOf(::AuthRepository)
     singleOf(::ExampleService)
     singleOf(::ExampleRepository)
+    singleOf(::OrdersRemoteDataSource)
     singleOf(::OrdersRepository)
     singleOf(::OrdersService)
+    singleOf(::EmployeesRemoteDataSource)
     singleOf(::EmployeesRepository)
     singleOf(::EmployeesService)
+    singleOf(::ScheduleRemoteDataSource)
+    singleOf(::DishesRemoteDataSource)
+    singleOf(::TablesRemoteDataSource)
     singleOf(::IngredientsRepository)
     singleOf(::IngredientsService)
     singleOf(::DishesRepository)
