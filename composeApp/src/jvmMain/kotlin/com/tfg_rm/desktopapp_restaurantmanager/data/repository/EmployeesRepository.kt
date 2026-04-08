@@ -10,7 +10,12 @@ class EmployeesRepository(
 ) {
     private val employees = mutableListOf<Employee>()
 
-    suspend fun getEmployees(): List<Employee> = employees.toList()
+    suspend fun getEmployees(): List<Employee> {
+        val fetched = remote.getEmployees().map { it.toDomain() }
+        employees.clear()
+        employees.addAll(fetched)
+        return employees.toList()
+    }
 
     suspend fun updateEmployee(updated: Employee) {
         val idx = employees.indexOfFirst { it.id == updated.id }
