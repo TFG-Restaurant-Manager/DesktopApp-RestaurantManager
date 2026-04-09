@@ -87,10 +87,12 @@ private val dayNames = mapOf(
 
 @Composable
 fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) {
-    val employees    by viewModel.employees.collectAsState()
-    val shifts       by viewModel.shifts.collectAsState()
-    val weekStart    by viewModel.currentWeekStart.collectAsState()
-    val saveState    by viewModel.saveState.collectAsState()
+    val employees          by viewModel.employees.collectAsState()
+    val shifts             by viewModel.shifts.collectAsState()
+    val weekStart          by viewModel.currentWeekStart.collectAsState()
+    val saveState          by viewModel.saveState.collectAsState()
+    val showUnsavedWarning by viewModel.showUnsavedWarning.collectAsState()
+    val unsavedEmployeeCodes by viewModel.unsavedEmployeeCodes.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.loadSchedule() }
 
@@ -300,16 +302,27 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
                             ) {
                                 // Employee info
                                 Column(modifier = Modifier.width(180.dp).padding(end = 16.dp)) {
-                                    Text(
-                                        text = emp.name, 
-                                        fontWeight = FontWeight.Bold, 
-                                        color = Color(0xFF0F172A), 
-                                        fontSize = 15.sp
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = emp.name,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF0F172A),
+                                            fontSize = 15.sp
+                                        )
+                                        val code = emp.code
+                                        if (code.isNotBlank() && code in unsavedEmployeeCodes) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "●",
+                                                color = Color(0xFFF97316),
+                                                fontSize = 8.sp
+                                            )
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = emp.roleName, 
-                                        style = MaterialTheme.typography.bodySmall, 
+                                        text = emp.roleName,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = Color(0xFF64748B)
                                     )
                                 }
@@ -355,6 +368,54 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, modifier: Modifier = Modifier) 
                 }
             }
         }
+    }
+
+    // Unsaved changes warning dialog
+    if (showUnsavedWarning) {
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelNavigation() },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    text = "Cambios sin guardar",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Text(
+                    text = "Tienes cambios sin guardar en esta semana. ¿Qué deseas hacer?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF475569)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.saveAndNavigate() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Guardar y continuar", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { viewModel.discardAndNavigate() },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+                        border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Descartar", fontWeight = FontWeight.SemiBold)
+                    }
+                    TextButton(onClick = { viewModel.cancelNavigation() }) {
+                        Text("Cancelar", color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        )
     }
 
     // Shift edit dialog

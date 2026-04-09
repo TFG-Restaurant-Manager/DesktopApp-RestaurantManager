@@ -9,10 +9,18 @@ import io.ktor.http.contentType
 
 class ScheduleRemoteDataSource(private val client: HttpClient) {
 
-    suspend fun saveSchedules(requests: List<WorkScheduleRequest>) {
-        client.post("api/work-schedules") {
+    /**
+     * Saves the weekly schedule for one employee via the per-employee endpoint.
+     * The body is a JSON array (7 items Mon→Sun) where items are either an object
+     * with `startDatetime`/`endDatetime` ISO strings, or `null` to indicate rest.
+     */
+    suspend fun saveEmployeeSchedule(
+        employeeCode: String,
+        weekly: List<WorkScheduleRequest?>
+    ) {
+        client.post("api/work-schedules/employee/$employeeCode") {
             contentType(ContentType.Application.Json)
-            setBody(requests)
+            setBody(weekly)
         }
     }
 }
