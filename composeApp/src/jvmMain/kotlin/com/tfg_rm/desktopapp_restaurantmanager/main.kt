@@ -13,15 +13,6 @@ import com.tfg_rm.desktopapp_restaurantmanager.di.viewModelModule
 import org.koin.core.context.startKoin
 
 fun main() = application {
-    startKoin {
-        modules(
-            networkModule,
-            dataSourceModule,
-            repositoryModule,
-            serviceModule,
-            viewModelModule
-        )
-    }
 
     val windowState = rememberWindowState(placement = WindowPlacement.Maximized)
     Window(

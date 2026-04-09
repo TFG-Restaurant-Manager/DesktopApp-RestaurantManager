@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.nio.channels.UnresolvedAddressException
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -24,7 +25,14 @@ class OrdersViewModel(
 
     fun loadOrders() {
         viewModelScope.launch {
-            _orders.value = service.getOrders()
+            try {
+                _orders.value = service.getOrders()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on loadOrders in OrdersViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on loadOrders in OrdersViewModel")
+            }
         }
     }
 
@@ -33,22 +41,36 @@ class OrdersViewModel(
     /** Called by NewOrderScreen to push a finished order into the active list. */
     fun addOrder(order: Order) {
         viewModelScope.launch {
-            service.addOrder(order)
-            _orders.value = service.getOrders()
+            try {
+                service.addOrder(order)
+                _orders.value = service.getOrders()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on addOrder in OrdersViewModel")
+            }
         }
     }
 
     /** Append extra items to an existing order (used when re-opening a pending order). */
     fun appendItems(orderId: Int, newItems: List<com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem>) {
         viewModelScope.launch {
-            val order = _orders.value.firstOrNull { it.id == orderId } ?: return@launch
-            val merged = order.orderItemsList.toMutableList().also { it.addAll(newItems) }
-            val updated = order.copy(
-                total = merged.sumOf { it.unitPrice * it.quantity },
-                orderItemsList = merged
-            )
-            service.updateOrder(updated)
-            _orders.value = service.getOrders()
+            try {
+                val order = _orders.value.firstOrNull { it.id == orderId } ?: return@launch
+                val merged = order.orderItemsList.toMutableList().also { it.addAll(newItems) }
+                val updated = order.copy(
+                    total = merged.sumOf { it.unitPrice * it.quantity },
+                    orderItemsList = merged
+                )
+                service.updateOrder(updated)
+                _orders.value = service.getOrders()
+            } catch (e: UnresolvedAddressException) {
+                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on addOrder in OrdersViewModel")
+            }
         }
     }
 
@@ -73,21 +95,28 @@ class OrdersViewModel(
 
     fun completeOrderItem(orderId: Int, itemId: Int) {
         viewModelScope.launch {
-            val updated = _orders.value.mapNotNull { order ->
-                if (order.id != orderId) return@mapNotNull order
-                val newItems = order.orderItemsList.toMutableList()
-                val idx = newItems.indexOfFirst { it.id == itemId }
-                if (idx >= 0) {
-                    val it = newItems[idx]
-                    if (it.quantity > 1) {
-                        newItems[idx] = it.copy(quantity = it.quantity - 1)
-                    } else {
-                        newItems.removeAt(idx)
+            try {
+                val updated = _orders.value.mapNotNull { order ->
+                    if (order.id != orderId) return@mapNotNull order
+                    val newItems = order.orderItemsList.toMutableList()
+                    val idx = newItems.indexOfFirst { it.id == itemId }
+                    if (idx >= 0) {
+                        val it = newItems[idx]
+                        if (it.quantity > 1) {
+                            newItems[idx] = it.copy(quantity = it.quantity - 1)
+                        } else {
+                            newItems.removeAt(idx)
+                        }
                     }
+                    if (newItems.isEmpty()) null else order.copy(orderItemsList = newItems)
                 }
-                if (newItems.isEmpty()) null else order.copy(orderItemsList = newItems)
+                _orders.value = updated
+            } catch (e: UnresolvedAddressException) {
+                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on addOrder in OrdersViewModel")
             }
-            _orders.value = updated
         }
     }
 }

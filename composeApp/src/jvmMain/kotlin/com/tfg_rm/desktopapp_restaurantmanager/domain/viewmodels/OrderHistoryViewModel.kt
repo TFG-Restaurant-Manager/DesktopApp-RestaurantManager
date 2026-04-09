@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.nio.channels.UnresolvedAddressException
 
 class OrderHistoryViewModel(
     val service: OrderHistoryService
@@ -21,7 +22,14 @@ class OrderHistoryViewModel(
 
     fun loadOrderHistory() {
         viewModelScope.launch {
-            _orders.value = service.getHistory()
+            try {
+                _orders.value = service.getHistory()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on loadOrderHistory in OrderHistoryViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on loadOrderHistory in OrderHistoryViewModel")
+            }
         }
     }
 

@@ -14,7 +14,7 @@ class TablesRepository(
 
     suspend fun getTables(): List<Table> = listOf()
 
-    suspend fun addTable(table: Table): Table {
+    suspend fun addTable(table: Table) {
         val request = TableCreateRequest(
             tableName    = table.name.ifBlank { "Mesa $nextId" },
             capacity     = table.capacity,
@@ -22,12 +22,7 @@ class TablesRepository(
             posY         = table.posY,
             restaurantId = table.restaurantId
         )
-        val response = remoteDataSource.createTable(request)
-        val withServerId = table.copy(
-            id   = response.tableId.toInt(),
-            name = response.tableName
-        )
-        return withServerId
+        remoteDataSource.createTable(request)
     }
 
     suspend fun updateTable(updated: Table) {

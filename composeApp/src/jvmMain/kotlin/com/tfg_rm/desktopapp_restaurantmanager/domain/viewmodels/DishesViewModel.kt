@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.nio.channels.UnresolvedAddressException
 
 class DishesViewModel(
     private val service: DishesService
@@ -23,8 +24,15 @@ class DishesViewModel(
 
     fun loadDishes() {
         viewModelScope.launch {
-            _dishes.value = service.getDishes()
-            _availableIngredients.value = service.getIngredients()
+            try {
+                _dishes.value = service.getDishes()
+                _availableIngredients.value = service.getIngredients()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on loadDishes in DishesViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on loadDishes in DishesViewModel")
+            }
         }
     }
 
@@ -33,7 +41,14 @@ class DishesViewModel(
             currentList + dish
         }
         viewModelScope.launch {
-            service.addDish(dish)
+            try {
+                service.addDish(dish)
+            }catch (e: UnresolvedAddressException) {
+                println("Error on addDish in DishesViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on addDish in DishesViewModel")
+            }
         }
     }
 
@@ -46,14 +61,28 @@ class DishesViewModel(
             }
         }
         viewModelScope.launch {
-            service.updateDish(dish)
+            try {
+                service.updateDish(dish)
+            }catch (e: UnresolvedAddressException) {
+                println("Error on updateDish in DishesViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on updateDish in DishesViewModel")
+            }
         }
     }
 
     fun deleteDish(id: Int) {
         _dishes.value.map { it.id != id }
         viewModelScope.launch {
-            service.deleteDish(id)
+            try {
+                service.deleteDish(id)
+            }catch (e: UnresolvedAddressException) {
+                println("Error on deleteDish in DishesViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on deleteDish in DishesViewModel")
+            }
         }
     }
 }

@@ -11,9 +11,11 @@ import io.ktor.http.contentType
 
 class TablesRemoteDataSource(private val client: HttpClient) {
 
-    suspend fun createTable(request: TableCreateRequest): TableResponse =
-        client.post("") {
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.body()
+    suspend fun createTable(request: TableCreateRequest) {
+//        client.post("") {
+//            contentType(ContentType.Application.Json)
+//            setBody(request)
+//        }.body()
+        // Missing implementation
+    }
 }

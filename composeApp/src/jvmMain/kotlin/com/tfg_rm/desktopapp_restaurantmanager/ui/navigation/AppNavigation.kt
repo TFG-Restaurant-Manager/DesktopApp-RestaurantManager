@@ -26,8 +26,10 @@ fun AppNavigation() {
 
     LaunchedEffect(authState) {
         when (authState) {
-            is AuthState.Success -> currentScreen = AppScreens.MainScreen.route
-            is AuthState.LogOut, AuthState.Idle -> {
+            is AuthState.Success -> {
+                currentScreen = AppScreens.MainScreen.route
+            }
+            is AuthState.LogOut -> {
                 currentScreen = AppScreens.LoginScreen.route
                 loginViewModel.resetState()
             }

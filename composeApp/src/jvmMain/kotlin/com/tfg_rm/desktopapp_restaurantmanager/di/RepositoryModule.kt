@@ -8,15 +8,17 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.repository.OrdersRepository
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.ScheduleRepository
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.TablesOrdersRepository
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.TablesRepository
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val repositoryModule = module {
-    single { AuthRepository(get(), get()) }
-    single { DishesRepository(get()) }
-    single { EmployeesRepository(get()) }
-    single { IngredientsRepository() }
-    single { OrdersRepository(get()) }
-    single { ScheduleRepository(get()) }
-    single { TablesRepository(get()) }
-    single { TablesOrdersRepository(get()) }
+    singleOf(::AuthRepository)
+    singleOf(::DishesRepository)
+    singleOf(::EmployeesRepository)
+    singleOf(::IngredientsRepository)
+    singleOf(::OrdersRepository)
+    singleOf(::ScheduleRepository)
+    singleOf(::TablesRepository)
+    singleOf(::TablesOrdersRepository)
+    singleOf(::OrdersRepository)
 }

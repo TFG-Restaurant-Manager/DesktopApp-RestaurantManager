@@ -7,10 +7,9 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.service.TablesService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.forEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-private const val DEFAULT_TABLE_ID = 1
+import java.nio.channels.UnresolvedAddressException
 
 class TablesViewModel(
     private val service: TablesService
@@ -25,48 +24,86 @@ class TablesViewModel(
 
     private fun loadTables() {
         viewModelScope.launch {
-            _tables.value = service.getTables()
+            try {
+                _tables.value = service.getTables()
+            } catch (e: UnresolvedAddressException) {
+                println("Error on loadTables in tables view model, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on loadTables in tables view model")
+            }
         }
     }
 
     fun addTable(posX: Int, posY: Int, capacity: Int = 4) {
         if (_tables.value.any { it.posX == posX && it.posY == posY }) return
         viewModelScope.launch {
-            val list = _tables.value.map { it.id }
-            val nextId = (1..list.size + 1).first { it !in list.toSet() }
-            val newTable = Table(id = nextId, capacity = capacity, posX = posX, posY = posY, status = "AVAILABLE")
-            service.addTable(newTable)
-            _tables.value.plus(newTable)
+            try {
+                val list = _tables.value.map { it.id }
+                val nextId = (1..list.size + 1).first { it !in list.toSet() }
+                val newTable = Table(id = nextId, capacity = capacity, posX = posX, posY = posY, status = "AVAILABLE")
+                service.addTable(newTable)
+                _tables.update { actualList ->
+                    actualList + newTable
+                }
+            } catch (e: UnresolvedAddressException) {
+                println("Error on addTable in tables view model, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on addTable in tables view model")
+            }
         }
     }
 
     /** Move a non-default table to a new grid cell. Does nothing if the cell is already taken. */
     fun moveTable(id: Int, posX: Int, posY: Int) {
-        if (id == DEFAULT_TABLE_ID) return
         if (_tables.value.any { it.posX == posX && it.posY == posY }) return
         viewModelScope.launch {
-            val table = _tables.value.firstOrNull { it.id == id } ?: return@launch
-            service.updateTable(table.copy(posX = posX, posY = posY))
-            val tableUpdate = _tables.value.find { it.id == id }
-            tableUpdate?.posY = posY
-            tableUpdate?.posX = posX
+            try {
+                val table = _tables.value.firstOrNull { it.id == id } ?: return@launch
+                service.updateTable(table.copy(posX = posX, posY = posY))
+                val tableUpdate = _tables.value.find { it.id == id }
+                tableUpdate?.posY = posY
+                tableUpdate?.posX = posX
+            } catch (e: UnresolvedAddressException) {
+                println("Error on moveTable in tables view model, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on moveTable in tables view model")
+            }
         }
     }
 
     fun setCapacity(id: Int, capacity: Int) {
         if (capacity < 1) return
         viewModelScope.launch {
-            val table = _tables.value.firstOrNull { it.id == id } ?: return@launch
-            service.updateTable(table.copy(capacity = capacity))
-            _tables.value = service.getTables()
+            try {
+                val table = _tables.value.firstOrNull { it.id == id } ?: return@launch
+                service.updateTable(table.copy(capacity = capacity))
+                _tables.value = service.getTables()
+            } catch (e: UnresolvedAddressException) {
+                println("Error on setCapacity in tables view model, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on setCapacity in tables view model")
+            }
         }
     }
 
     fun removeTable(id: Int) {
-        if (id == DEFAULT_TABLE_ID) return
         viewModelScope.launch {
-            service.deleteTable(id)
-            _tables.value = service.getTables()
+            try {
+                service.deleteTable(id)
+                val tableEliminate = _tables.value.find { it.id == id }
+                _tables.update { tablaActual ->
+                    tablaActual.minus(tableEliminate!!)
+                }
+            } catch (e: UnresolvedAddressException) {
+                println("Error on removeTable in tables view model, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on removeTable in tables view model")
+            }
         }
     }
 }

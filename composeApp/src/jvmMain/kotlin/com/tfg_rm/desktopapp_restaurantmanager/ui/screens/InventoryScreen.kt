@@ -198,15 +198,30 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                 val allCategories = listOf(Strings.t("screen.inventory.filter.all")) + categories
                 items(allCategories) { cat ->
                     val selected = cat == selectedCategory
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = if (selected) Orange else Color(0xFFF8FAFC),
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                            .clickable { selectedCategory = cat }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
+//                    Box(
+//                        modifier = Modifier
+//                            .background(
+//                                color = if (selected) Orange else Color(0xFFF8FAFC),
+//                                shape = RoundedCornerShape(20.dp)
+//                            )
+//                            .clickable { selectedCategory = cat }
+//                            .padding(horizontal = 16.dp, vertical = 8.dp),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        Text(
+//                            text = cat,
+//                            color = if (selected) Color.White else Color(0xFF334155),
+//                            fontWeight = FontWeight.Medium,
+//                            fontSize = 14.sp
+//                        )
+//                    }
+                    Button(
+                        onClick = {selectedCategory = cat},
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selected) Orange else Color(0xFFF8FAFC)
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(
                             text = cat,

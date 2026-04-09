@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.nio.channels.UnresolvedAddressException
 
 class NewOrderViewModel(
     private val dishesService: DishesService,
@@ -59,8 +60,15 @@ class NewOrderViewModel(
     // ─── init ────────────────────────────────────────────────────────────────
     init {
         viewModelScope.launch {
-            _tables.value = tablesService.getTables()
-            _dishes.value = dishesService.getDishes().filter { it.available }
+            try {
+                _tables.value = tablesService.getTables()
+                _dishes.value = dishesService.getDishes().filter { it.available }
+            }catch (e: UnresolvedAddressException) {
+                println("Error on init in NewOrderViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on init in NewOrderViewModel")
+            }
         }
     }
 
@@ -109,38 +117,47 @@ class NewOrderViewModel(
     /** Builds the final [Order] and pushes it via the service. Returns the saved order. */
     fun submitOrder(paymentMethod: String, cashGiven: Double?, onDone: (Order) -> Unit) {
         viewModelScope.launch {
-            val items = _draftItems.value.map { draft ->
-                val modNotes = draft.ingredientMods.entries
-                    .filter { it.value != "NORMAL" }
-                    .joinToString(", ") { (id, mod) ->
-                        val ingName = draft.dish.ingredients.firstOrNull { it.ingredient.id == id }?.ingredient?.name ?: "Ingrediente $id"
-                        if (mod == "EXTRA") "+$ingName" else "-$ingName"
-                    }
-                val fullNotes = listOfNotNull(draft.notes.ifBlank { null }, modNotes.ifBlank { null }).joinToString("; ")
-                OrderItem(
-                    id        = nextItemId++,
-                    dishId      = draft.dish.id,
-                    unitPrice = draft.dish.price,
-                    notes     = fullNotes.ifBlank { null },
-                    quantity  = draft.quantity,
-                    dishName = draft.dish.name
+            try {
+                val items = _draftItems.value.map { draft ->
+                    val modNotes = draft.ingredientMods.entries
+                        .filter { it.value != "NORMAL" }
+                        .joinToString(", ") { (id, mod) ->
+                            val ingName = draft.dish.ingredients.firstOrNull { it.ingredient.id == id }?.ingredient?.name ?: "Ingrediente $id"
+                            if (mod == "EXTRA") "+$ingName" else "-$ingName"
+                        }
+                    val fullNotes = listOfNotNull(draft.notes.ifBlank { null }, modNotes.ifBlank { null }).joinToString("; ")
+                    OrderItem(
+                        id        = nextItemId++,
+                        dishId      = draft.dish.id,
+                        unitPrice = draft.dish.price,
+                        notes     = fullNotes.ifBlank { null },
+                        quantity  = draft.quantity,
+                        dishName = draft.dish.name
+                    )
+                }
+                val total = items.sumOf { it.unitPrice * it.quantity }
+                val order = Order(
+                    id               = 0,
+                    tableId          = _selectedTableId.value ?: 0,
+                    status           = "CREATED",
+                    total            = total,
+                    orderType        = _orderType.value.name,
+                    notes            = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
+                    deliveryAddress  = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
+                    orderItemsList   = items.toMutableList()
                 )
+                val saved = ordersService.addOrder(order)
+                _lastSubmittedOrder.value = saved
+                onDone(saved)
+                reset()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on submitOrder in NewOrderViewModel, direccion ip no existente")
+                reset()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on submitOrder in NewOrderViewModel")
+                reset()
             }
-            val total = items.sumOf { it.unitPrice * it.quantity }
-            val order = Order(
-                id               = 0,
-                tableId          = _selectedTableId.value ?: 0,
-                status           = "CREATED",
-                total            = total,
-                orderType        = _orderType.value.name,
-                notes            = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
-                deliveryAddress  = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
-                orderItemsList   = items.toMutableList()
-            )
-            val saved = ordersService.addOrder(order)
-            _lastSubmittedOrder.value = saved
-            onDone(saved)
-            reset()
         }
     }
 

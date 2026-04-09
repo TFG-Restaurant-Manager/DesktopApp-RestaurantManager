@@ -20,7 +20,7 @@ class TablesService(
                 status = it.status
             )
         }
-    suspend fun addTable(table: Table): Table = repository.addTable(table)
+    suspend fun addTable(table: Table) = repository.addTable(table)
     suspend fun updateTable(table: Table)     = repository.updateTable(table)
     suspend fun deleteTable(id: Int)          = repository.deleteTable(id)
 }

@@ -28,7 +28,7 @@ object NetworkProvider {
             install(WebSockets)
 
             defaultRequest {
-                url("https://owners-ones-trade-plumbing.trycloudflare.com/")
+                url("https://fabrics-cfr-wet-drum.trycloudflare.com/")
 
                 tokenProvider.getToken()?.let {
                     header("Authorization", "Bearer $it")

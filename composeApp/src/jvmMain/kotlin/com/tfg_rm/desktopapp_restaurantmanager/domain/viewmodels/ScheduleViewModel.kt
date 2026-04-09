@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.nio.channels.UnresolvedAddressException
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -42,22 +43,43 @@ class ScheduleViewModel(
 
     fun loadSchedule() {
         viewModelScope.launch {
-            _employees.value = employeesService.getEmployees()
-            _shifts.value = scheduleService.getShifts()
+            try {
+                _employees.value = employeesService.getEmployees()
+                _shifts.value = scheduleService.getShifts()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on loadSchedule in ScheduleViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on loadSchedule in tables view model")
+            }
         }
     }
 
     fun setShift(shift: Shift) {
         viewModelScope.launch {
-            scheduleService.setShift(shift)
-            _shifts.value = scheduleService.getShifts()
+            try {
+                scheduleService.setShift(shift)
+                _shifts.value = scheduleService.getShifts()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on setShift in ScheduleViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on setShift in tables view model")
+            }
         }
     }
 
     fun removeShift(employeeRestaurantId: Int, day: DayOfWeek) {
         viewModelScope.launch {
-            scheduleService.removeShift(employeeRestaurantId, day)
-            _shifts.value = scheduleService.getShifts()
+            try {
+                scheduleService.removeShift(employeeRestaurantId, day)
+                _shifts.value = scheduleService.getShifts()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on removeShift in ScheduleViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on removeShift in tables view model")
+            }
         }
     }
 

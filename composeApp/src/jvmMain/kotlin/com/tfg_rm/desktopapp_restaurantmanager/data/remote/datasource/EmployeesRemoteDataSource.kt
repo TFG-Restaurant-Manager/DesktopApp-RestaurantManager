@@ -14,7 +14,7 @@ class EmployeesRemoteDataSource(
     private val client: HttpClient
 ) {
 
-    suspend fun getEmployees(): List<EmployeeWithSchedulesResponse> = client.get("api/employee/info").body()
+    suspend fun getEmployees(): List<EmployeeWithSchedulesResponse> = client.get("api/employee").body()
     suspend fun registerEmployee(request: EmployeeRegisterRequest): EmployeeWithSchedulesResponse {
         return client.post("employee/register") {
             contentType(ContentType.Application.Json)

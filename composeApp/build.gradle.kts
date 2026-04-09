@@ -26,6 +26,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
             implementation("io.ktor:ktor-client-cio:2.3.7")
             implementation("io.ktor:ktor-client-plugins:2.3.7")
             implementation("io.insert-koin:koin-core:4.2.0")
