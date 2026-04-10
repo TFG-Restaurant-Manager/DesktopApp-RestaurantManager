@@ -12,15 +12,15 @@ class EmployeesRepository(
 
     suspend fun getEmployees(): List<Employee> = remote.getEmployees().map { it.toEmployee() }
 
-    suspend fun updateEmployee(updated: Employee) {
+    suspend fun updateEmployee(updated: Employee) =
         remote.updateEmployee(updated.id, updated.toEmployeeUpdateRequest())
-    }
 
-    suspend fun deleteEmployee(employee: Employee) {
+    suspend fun updatePassword(employee: Employee, password: String) =
+        remote.updatePassword(employee.id, password)
+
+    suspend fun deleteEmployee(employee: Employee) =
         remote.deleteEmployee(employee.id)
-    }
 
-    suspend fun addEmployee(employee: Employee, password: String) {
+    suspend fun addEmployee(employee: Employee, password: String) =
         remote.registerEmployee(employee.toEmployeeRegisterRequest(password))
-    }
 }

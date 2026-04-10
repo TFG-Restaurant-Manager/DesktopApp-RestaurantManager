@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.CreateEmployeeState
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
+import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import java.time.LocalDate
 
 @Composable
@@ -29,6 +30,7 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
     val editingEmployee = remember { mutableStateOf<Employee?>(null) }
     val deletingEmployee = remember { mutableStateOf<Employee?>(null) }
     val creatingEmployee = remember { mutableStateOf(false) }
+    var editingPaswordEmployee = remember { mutableStateOf<Employee?>(null) }
 
     LaunchedEffect(Unit) { viewModel.loadEmployees() }
     LaunchedEffect(createState) {
@@ -56,14 +58,14 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
         ) {
             Column {
                 Text(
-                    text = "Empleados",
+                    text = Strings.t("screen.employees.title"),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF1E293B)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Gestiona el personal del restaurante",
+                    text = Strings.t("screen.employees.work"),
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color(0xFF64748B)
                 )
@@ -76,7 +78,11 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
             ) {
                 Text(text = "+", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Añadir Empleado", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = Strings.t("screen.employees.buttontext.addemployee"),
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 
@@ -91,7 +97,11 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(vertical = 24.dp, horizontal = 24.dp)) {
-                    Text(text = "Total Empleados", color = Color(0xFF64748B), fontSize = 14.sp)
+                    Text(
+                        text = Strings.t("screen.employees.text.totalemployees"),
+                        color = Color(0xFF64748B),
+                        fontSize = 14.sp
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = employees.size.toString(),
@@ -108,7 +118,7 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(vertical = 24.dp, horizontal = 24.dp)) {
-                    Text(text = "Activos", color = Color(0xFF64748B), fontSize = 14.sp)
+                    Text(text = Strings.t("screen.employees.text.actives"), color = Color(0xFF64748B), fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = activeEmployees.toString(),
@@ -125,7 +135,11 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(vertical = 24.dp, horizontal = 24.dp)) {
-                    Text(text = "Nómina Total", color = Color(0xFF64748B), fontSize = 14.sp)
+                    Text(
+                        text = Strings.t("screen.employees.text.totalpayroll"),
+                        color = Color(0xFF64748B),
+                        fontSize = 14.sp
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "${totalPayroll}€",
@@ -154,37 +168,37 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Nombre",
+                        Strings.t("screen.dishes.table.name"),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF334155),
                         modifier = Modifier.weight(1.5f)
                     )
                     Text(
-                        "Puesto",
+                        Strings.t("screen.employees.text.position"),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF334155),
                         modifier = Modifier.weight(1.5f)
                     )
                     Text(
-                        "Contacto",
+                        Strings.t("screen.employees.text.contact"),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF334155),
                         modifier = Modifier.weight(2f)
                     )
                     Text(
-                        "Salario",
+                        Strings.t("screen.employees.text.salary"),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF334155),
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        "Estado",
+                        Strings.t("screen.employees.text.status"),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF334155),
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        "Acciones",
+                        Strings.t("screen.employees.text.actions"),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF334155),
                         modifier = Modifier.weight(1f)
@@ -219,7 +233,7 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("☎", color = Color(0xFF94A3B8), fontSize = 14.sp)
                                     Spacer(Modifier.width(8.dp))
-                                    Text(emp.phone!!, color = Color(0xFF64748B), fontSize = 14.sp)
+                                    Text(emp.phone ?: "---", color = Color(0xFF64748B), fontSize = 14.sp)
                                 }
                             }
 
@@ -244,7 +258,8 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                             Box(modifier = Modifier.weight(1f)) {
                                 val badgeBg = if (isInactive) Color(0xFFF1F5F9) else Color(0xFFDCFCE7)
                                 val badgeText = if (isInactive) Color(0xFF64748B) else Color(0xFF16A34A)
-                                val badgeLabel = if (isInactive) "Inactivo" else "Activo"
+                                val badgeLabel = if (isInactive) Strings.t("screen.employees.text.inactive")
+                                else Strings.t("screen.employees.text.active")
 
                                 Surface(
                                     color = badgeBg,
@@ -263,6 +278,13 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                             Row(modifier = Modifier.weight(1f)) {
                                 IconButton(onClick = { editingEmployee.value = emp }, modifier = Modifier.size(36.dp)) {
                                     Text("✎", color = Color(0xFF3B82F6), fontSize = 18.sp)
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                IconButton(
+                                    onClick = { editingPaswordEmployee.value = emp },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Text("🔑", color = Color(0xFF3B82F6), fontSize = 18.sp)
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 IconButton(
@@ -304,21 +326,32 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
             )
         }
 
+        editingPaswordEmployee.value?.let { emp ->
+            EditEmployeePasswordDialog(
+                emp,
+                onDismiss = { editingPaswordEmployee.value = null },
+                onSave = { newPassword, employeeUpdated ->
+                    viewModel.updateEmployeePassword(employeeUpdated, newPassword)
+                    editingPaswordEmployee.value = null
+                }
+            )
+        }
+
         deletingEmployee.value?.let { emp ->
             AlertDialog(
                 onDismissRequest = { deletingEmployee.value = null },
-                title = { Text(text = "Confirmar borrado") },
-                text = { Text(text = "¿Eliminar a ${emp.name} (${emp.email})?") },
+                title = { Text(text = Strings.t("screen.employees.text.confirmdeletion")) },
+                text = { Text(text = "¿${Strings.t("screen.employees.text.deletesomeone")} ${emp.name} (${emp.email})?") },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.deleteEmployee(emp)
                         deletingEmployee.value = null
-                    }) { Text(text = "Eliminar", color = Color(0xFFEF4444)) }
+                    }) { Text(text = Strings.t("screen.employees.text.delete"), color = Color(0xFFEF4444)) }
                 },
                 dismissButton = {
                     TextButton(onClick = { deletingEmployee.value = null }) {
                         Text(
-                            text = "Cancelar",
+                            text = Strings.t("screen.tables.config.cancel"),
                             color = Color(0xFF64748B)
                         )
                     }
@@ -326,6 +359,55 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
             )
         }
     }
+}
+
+@Composable
+private fun EditEmployeePasswordDialog(emp: Employee, onDismiss: () -> Unit, onSave: (String, Employee) -> Unit) {
+    var password1 by remember { mutableStateOf("") }
+    var password2 by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = Strings.t("screen.employees.text.changepassword"), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                TextField(
+                    value = password1,
+                    onValueChange = { password1 = it },
+                    label = { Text(text = Strings.t("login.password_label")) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                TextField(
+                    value = password2,
+                    onValueChange = { password2 = it },
+                    label = { Text(text = Strings.t("screen.employees.text.repeatpassword")) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (error.isNotEmpty()) {
+                    Text(error)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (password1 == password2) {
+                    onSave(password1, emp)
+                } else error = Strings.t("screen.employees.error.samepassword")
+            }) { Text(text = Strings.t("screen.tables.config.save"), color = Color(0xFF3B82F6)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = Strings.t("screen.tables.config.cancel"),
+                    color = Color(0xFF64748B)
+                )
+            }
+        }
+    )
 }
 
 @Composable
@@ -354,7 +436,7 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Editar empleado", fontWeight = FontWeight.Bold) },
+        title = { Text(text = Strings.t("screen.employees.text.editemployee"), fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -363,28 +445,28 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
                 TextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(text = "Nombre") },
+                    label = { Text(text = Strings.t("screen.ingredient.form.name")) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 TextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text(text = "Teléfono") },
+                    label = { Text(text = Strings.t("screen.employees.atribute.email")) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 TextField(
-                    value = phone!!,
+                    value = phone ?: "---",
                     onValueChange = { phone = it },
-                    label = { Text(text = "Teléfono") },
+                    label = { Text(text = Strings.t("screen.employees.atribute.phone")) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 StableDateSelector(
-                    "Fecha de inicio (AAAA-MM-DD)",
+                    Strings.t("screen.employees.atribute.startdate"),
                     { startDate = it },
                     emp.startDate
                 )
                 StableDateSelector(
-                    "Fecha de fin (AAAA-MM-DD)",
+                    Strings.t("screen.employees.atribute.enddate"),
                     { endDate = it },
                     emp.endDate
                 )
@@ -398,13 +480,15 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
                 ) {
                     Column {
                         Text(
-                            text = "Estado del empleado",
+                            text = Strings.t("screen.employees.atribute.active"),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF334155)
                         )
                         Text(
-                            text = if (isActive) "El empleado puede acceder al sistema" else "Acceso restringido",
+                            text = if (isActive) Strings.t("screen.employees.atribute.active.text.true") else Strings.t(
+                                "screen.employees.atribute.active.text.false"
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = Color(0xFF64748B)
                         )
@@ -424,7 +508,8 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
                         enabled = true
                     ) {
                         Text(
-                            text = if (isActive) "ACTIVO" else "INACTIVO",
+                            text = if (isActive) Strings.t("screen.employees.atribute.active.value.true")
+                            else Strings.t("screen.employees.atribute.active.value.false"),
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -454,7 +539,7 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
                 TextField(
                     value = positionNotes ?: "",
                     onValueChange = { positionNotes = it },
-                    label = { Text(text = "Notas posición") },
+                    label = { Text(text = Strings.t("screen.employees.atribute.positionnotes")) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -473,9 +558,16 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
                         active = isActive
                     )
                 )
-            }) { Text(text = "Guardar", color = Color(0xFF3B82F6)) }
+            }) { Text(text = Strings.t("screen.tables.config.save"), color = Color(0xFF3B82F6)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(text = "Cancelar", color = Color(0xFF64748B)) } }
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = Strings.t("screen.tables.config.cancel"),
+                    color = Color(0xFF64748B)
+                )
+            }
+        }
     )
 }
 
@@ -503,13 +595,13 @@ private fun NewEmployeeDialog(
 
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
-        title = { Text(text = "Añadir empleado", fontWeight = FontWeight.Bold) },
+        title = { Text(text = Strings.t("screen.employees.buttontext.addemployee"), fontWeight = FontWeight.Bold) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 TextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(text = "Nombre") },
+                    label = { Text(text = Strings.t("screen.ingredient.form.name")) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 )
@@ -517,7 +609,7 @@ private fun NewEmployeeDialog(
                 TextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text(text = "Email") },
+                    label = { Text(text = Strings.t("screen.employees.atribute.email")) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 )
@@ -525,7 +617,7 @@ private fun NewEmployeeDialog(
                 TextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text(text = "Teléfono (opcional)") },
+                    label = { Text(text = Strings.t("screen.employees.atribute.phone")) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 )
@@ -533,7 +625,7 @@ private fun NewEmployeeDialog(
                 TextField(
                     value = code,
                     onValueChange = { if (it.length <= 10) code = it },
-                    label = { Text(text = "Código empleado") },
+                    label = { Text(text = Strings.t("screen.employees.atribute.code")) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 )
@@ -541,19 +633,19 @@ private fun NewEmployeeDialog(
                 TextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text(text = "Contraseña") },
+                    label = { Text(text = Strings.t("login.password_label")) },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 StableDateSelector(
-                    "Fecha de inicio (AAAA-MM-DD)",
+                    Strings.t("screen.employees.atribute.startdate"),
                     { startDate = it }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 StableDateSelector(
-                    "Fecha de fin (AAAA-MM-DD)",
+                    Strings.t("screen.employees.atribute.enddate"),
                     { endDate = it }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -567,13 +659,15 @@ private fun NewEmployeeDialog(
                 ) {
                     Column {
                         Text(
-                            text = "Estado del empleado",
+                            text = Strings.t("screen.employees.atribute.active"),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF334155)
                         )
                         Text(
-                            text = if (isActive) "El empleado puede acceder al sistema" else "Acceso restringido",
+                            text = if (isActive) Strings.t("screen.employees.atribute.active.text.true") else Strings.t(
+                                "screen.employees.atribute.active.text.false"
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = Color(0xFF64748B)
                         )
@@ -593,7 +687,8 @@ private fun NewEmployeeDialog(
                         enabled = !isLoading
                     ) {
                         Text(
-                            text = if (isActive) "ACTIVO" else "INACTIVO",
+                            text = if (isActive) Strings.t("screen.employees.atribute.active.value.true") else
+                                Strings.t("screen.employees.atribute.active.value.false"),
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -625,7 +720,7 @@ private fun NewEmployeeDialog(
                 TextField(
                     value = positionNotes,
                     onValueChange = { if (it.length <= 10) positionNotes = it },
-                    label = { Text(text = "Notas de la posicion") },
+                    label = { Text(text = Strings.t("screen.employees.atribute.positionnotes")) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 )
@@ -664,13 +759,13 @@ private fun NewEmployeeDialog(
                         color = Color(0xFFF97316)
                     )
                 } else {
-                    Text(text = "Crear", color = Color(0xFFF97316))
+                    Text(text = Strings.t("generic.create"), color = Color(0xFFF97316))
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isLoading) {
-                Text(text = "Cancelar", color = Color(0xFF64748B))
+                Text(text = Strings.t("screen.tables.config.cancel"), color = Color(0xFF64748B))
             }
         }
     )
@@ -707,17 +802,17 @@ fun StableDateSelector(
                 value = day,
                 onValueChange = { if (it.length <= 2) day = it },
                 modifier = Modifier.weight(0.3f),
-                label = { Text("DD") })
+                label = { Text(Strings.t("screen.employees.text.days.short")) })
             OutlinedTextField(
                 value = month,
                 onValueChange = { if (it.length <= 2) month = it },
                 modifier = Modifier.weight(0.3f),
-                label = { Text("MM") })
+                label = { Text(Strings.t("screen.employees.text.moths.short")) })
             OutlinedTextField(
                 value = year,
                 onValueChange = { if (it.length <= 4) year = it },
                 modifier = Modifier.weight(0.4f),
-                label = { Text("AAAA") })
+                label = { Text(Strings.t("screen.employees.text.years.short")) })
         }
 
         // Al cambiar cualquier valor, notificamos la fecha completa

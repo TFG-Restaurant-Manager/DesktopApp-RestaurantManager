@@ -32,4 +32,9 @@ class EmployeesRemoteDataSource(
             setBody(employee)
         }
     }
+
+    suspend fun updatePassword(employeeId: Int, newPassword: String) =
+        client.put("api/employee/$employeeId/password") {
+            setBody(newPassword)
+        }
 }

@@ -64,6 +64,19 @@ class EmployeesViewModel(
         }
     }
 
+    fun updateEmployeePassword(updated: Employee, password: String) {
+        viewModelScope.launch {
+            try {
+                service.updatePassword(updated, password)
+            } catch (e: UnresolvedAddressException) {
+                println("Error on updateEmployeePassword in EmployeesViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on updateEmployeePassword in EmployeesViewModel")
+            }
+        }
+    }
+
     fun deleteEmployee(employee: Employee) {
         viewModelScope.launch {
             try {
