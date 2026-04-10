@@ -27,7 +27,7 @@ class DishesViewModel(
             try {
                 _dishes.value = service.getDishes()
                 _availableIngredients.value = service.getIngredients()
-            }catch (e: UnresolvedAddressException) {
+            } catch (e: UnresolvedAddressException) {
                 println("Error on loadDishes in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -37,13 +37,13 @@ class DishesViewModel(
     }
 
     fun addDish(dish: Dishes) {
-        _dishes.update {currentList ->
-            currentList + dish
-        }
         viewModelScope.launch {
             try {
                 service.addDish(dish)
-            }catch (e: UnresolvedAddressException) {
+                _dishes.update { currentList ->
+                    currentList + dish
+                }
+            } catch (e: UnresolvedAddressException) {
                 println("Error on addDish in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -53,17 +53,17 @@ class DishesViewModel(
     }
 
     fun updateDish(dish: Dishes) {
-        _dishes.value.map {currentDish ->
-            if (currentDish.id == dish.id) {
-                dish
-            }else {
-                currentDish
-            }
-        }
         viewModelScope.launch {
             try {
                 service.updateDish(dish)
-            }catch (e: UnresolvedAddressException) {
+                _dishes.value.map { currentDish ->
+                    if (currentDish.id == dish.id) {
+                        dish
+                    } else {
+                        currentDish
+                    }
+                }
+            } catch (e: UnresolvedAddressException) {
                 println("Error on updateDish in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -73,11 +73,11 @@ class DishesViewModel(
     }
 
     fun deleteDish(id: Int) {
-        _dishes.value.map { it.id != id }
         viewModelScope.launch {
             try {
                 service.deleteDish(id)
-            }catch (e: UnresolvedAddressException) {
+                _dishes.value.map { it.id != id }
+            } catch (e: UnresolvedAddressException) {
                 println("Error on deleteDish in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -5,6 +5,8 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -38,10 +40,18 @@ private val cellGap = 16.dp
 
 @Composable
 fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
-    val tables by viewModel.tables.collectAsState()
+    val tablesState by viewModel.tables.collectAsState()
 
-    var gridColumns by remember { mutableStateOf(6) }
-    var gridRows by remember { mutableStateOf(5) }
+    // Atributes to observe the section
+    var actualSection by remember { mutableStateOf(tablesState.getOrNull(0)?.section ?: "Sec1") }
+    val sections = tablesState.map { it.section }.distinct()
+    val tables = tablesState.filter { it.section == actualSection }
+
+    var maxX by remember { mutableStateOf(tables.maxOfOrNull { it.posX }) }
+    var maxY by remember { mutableStateOf(tables.maxOfOrNull { it.posY }) }
+
+    var gridColumns by remember { mutableStateOf(if (maxX == null || maxX!! < 2) 2 else maxX!!) }
+    var gridRows by remember { mutableStateOf(if (maxY == null || maxY!! < 2) 2 else maxY!!) }
 
     // Table being configured (capacity dialog)
     var configTarget by remember { mutableStateOf<Table?>(null) }
@@ -68,6 +78,18 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
     var hoverCol by remember { mutableStateOf<Int?>(null) }
     var hoverRow by remember { mutableStateOf<Int?>(null) }
     var dragStartBase by remember { mutableStateOf(Offset.Zero) }
+
+    LaunchedEffect(actualSection, tablesState) {
+        // Filtramos las mesas de la sección actual
+        val tablesInSection = tablesState.filter { it.section == actualSection }
+
+        val maxX = tablesInSection.maxOfOrNull { it.posX } ?: 0
+        val maxY = tablesInSection.maxOfOrNull { it.posY } ?: 0
+
+        // Actualizamos el estado del grid (mínimo 2x2 para que no se vea vacío)
+        gridColumns = if (maxX < 2) 2 else maxX
+        gridRows = if (maxY < 2) 2 else maxY
+    }
 
     Box(
         modifier = modifier
@@ -236,6 +258,74 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                             Strings.t("screen.tables.help.drag_new")
                         ).forEach { hint ->
                             Text("• $hint", style = MaterialTheme.typography.bodySmall, color = tableOrangeD)
+                        }
+                    }
+                }
+
+                // Sections selector
+                var expanded by remember { mutableStateOf(false) }
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 2.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(Strings.t("screen.tables.section.title"))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = actualSection,
+                                onValueChange = {},
+                                modifier = Modifier.fillMaxWidth(), // Solo uno
+                                label = { Text(Strings.t("screen.tables.section.label")) },
+                                readOnly = true,
+                                enabled = true,
+                                singleLine = true,
+                                isError = false,
+                                textStyle = LocalTextStyle.current, // Mejor usar el estilo local o uno definido
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+
+                            // Esta superficie invisible encima del TextField captura el click
+                            // para abrir el menú sin usar APIs experimentales
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { expanded = !expanded }
+                            )
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false },
+                                // Ajustamos el ancho para que coincida con el TextField
+                                modifier = Modifier.fillMaxWidth(0.9f)
+                            ) {
+                                if (sections.isNotEmpty()) {
+                                    sections.forEach { option ->
+                                        DropdownMenuItem(
+                                            text = { Text(option!!) },
+                                            onClick = {
+                                                actualSection = option!!
+                                                expanded = false
+                                            }
+                                        )
+                                    }
+                                } else {
+                                    DropdownMenuItem(
+                                        text = { Text(Strings.t("screen.tables.section.emptysections")) },
+                                        onClick = {}
+                                    )
+                                }
+                            }
                         }
                     }
                 }

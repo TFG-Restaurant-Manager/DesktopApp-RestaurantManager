@@ -10,7 +10,7 @@ class EmployeesService(
 
     suspend fun updateEmployee(employee: Employee) = repository.updateEmployee(employee)
 
-    suspend fun deleteEmployeeByEmail(email: String) = repository.deleteEmployeeByEmail(email)
+    suspend fun deleteEmployee(employee: Employee) = repository.deleteEmployee(employee)
 
     suspend fun addEmployee(employee: Employee, password: String) = repository.addEmployee(employee, password)
 }

@@ -1,8 +1,9 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.EmployeesRemoteDataSource
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.EmployeeRegisterRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployee
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployeeRegisterRequest
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployeeUpdateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 
 class EmployeesRepository(
@@ -12,14 +13,14 @@ class EmployeesRepository(
     suspend fun getEmployees(): List<Employee> = remote.getEmployees().map { it.toEmployee() }
 
     suspend fun updateEmployee(updated: Employee) {
-        // Falta implementacion remote data source
+        remote.updateEmployee(updated.id, updated.toEmployeeUpdateRequest())
     }
 
-    suspend fun deleteEmployeeByEmail(email: String) {
-        // Falta implementacion remote data source
+    suspend fun deleteEmployee(employee: Employee) {
+        remote.deleteEmployee(employee.id)
     }
 
     suspend fun addEmployee(employee: Employee, password: String) {
-        // Falta implementacion remote data source
+        remote.registerEmployee(employee.toEmployeeRegisterRequest(password))
     }
 }

@@ -1,12 +1,12 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.remote.network
 
-import io.ktor.client.HttpClient
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
@@ -20,6 +20,7 @@ object NetworkProvider {
             install(ContentNegotiation) {
                 json(
                     Json {
+                        encodeDefaults = true
                         ignoreUnknownKeys = true
                     }
                 )
@@ -28,7 +29,7 @@ object NetworkProvider {
             install(WebSockets)
 
             defaultRequest {
-                url("https://fabrics-cfr-wet-drum.trycloudflare.com/")
+                url("https://commerce-opinion-arena-charlotte.trycloudflare.com/")
 
                 tokenProvider.getToken()?.let {
                     header("Authorization", "Bearer $it")
@@ -43,7 +44,7 @@ object NetworkProvider {
 
                     println("STATUS: $status")
 
-                    if (status == 401 || status == 403) {
+                    if (status == 401 /*|| status == 403*/) {
                         runBlocking {
                             tokenProvider.clearToken()
                             SessionManager.notifySessionExpired()

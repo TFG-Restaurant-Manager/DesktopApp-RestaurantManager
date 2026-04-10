@@ -2,12 +2,13 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.nio.channels.UnresolvedAddressException
 
@@ -34,7 +35,7 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 _employees.value = service.getEmployees()
-            }catch (e: UnresolvedAddressException) {
+            } catch (e: UnresolvedAddressException) {
                 println("Error on loadEmployees in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -51,8 +52,10 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 service.updateEmployee(updated)
-                _employees.value = service.getEmployees()
-            }catch (e: UnresolvedAddressException) {
+                _employees.update { list ->
+                    list.map { if (it.id == updated.id) updated else it }
+                }
+            } catch (e: UnresolvedAddressException) {
                 println("Error on updateEmployee in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -61,12 +64,14 @@ class EmployeesViewModel(
         }
     }
 
-    fun deleteEmployee(email: String) {
+    fun deleteEmployee(employee: Employee) {
         viewModelScope.launch {
             try {
-                service.deleteEmployeeByEmail(email)
-                _employees.value = service.getEmployees()
-            }catch (e: UnresolvedAddressException) {
+                service.deleteEmployee(employee)
+                _employees.update { list ->
+                    list.filter { it.id != employee.id }
+                }
+            } catch (e: UnresolvedAddressException) {
                 println("Error on deleteEmployee in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -82,7 +87,7 @@ class EmployeesViewModel(
                 service.addEmployee(employee, password)
                 _employees.value = service.getEmployees()
                 _createState.value = CreateEmployeeState.Success
-            }catch (e: UnresolvedAddressException) {
+            } catch (e: UnresolvedAddressException) {
                 println("Error on addEmployee in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()

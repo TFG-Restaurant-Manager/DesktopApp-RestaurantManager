@@ -1,9 +1,9 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableOrdersResponse
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
 
 /**
  * Remote DataSource responsible for fetching combined information regarding tables
@@ -13,7 +13,7 @@ import io.ktor.client.request.get
  *
  * @property client Injected HTTP client used to communicate with the server.
  */
-class TablesOrdersDataSource (
+class TablesOrdersDataSource(
     private val client: HttpClient
 ) {
 
@@ -31,6 +31,6 @@ class TablesOrdersDataSource (
      * @throws Exception For any other network or serialization error.
      */
     suspend fun getTablesOrders(): List<TableOrdersResponse> {
-        return client.get("api/table/info").body()
+        return client.get("api/table").body()
     }
 }

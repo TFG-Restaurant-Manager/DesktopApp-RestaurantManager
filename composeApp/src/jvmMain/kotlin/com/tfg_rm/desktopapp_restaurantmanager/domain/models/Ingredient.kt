@@ -3,7 +3,6 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.models
 data class Ingredient(
     // ── Server fields (DB: ingredients) ─────────────────────────────────
     val id: Int,
-    val restaurantId: Int,
     val name: String,
     val unit: String,
     val stockQuantity: Double,

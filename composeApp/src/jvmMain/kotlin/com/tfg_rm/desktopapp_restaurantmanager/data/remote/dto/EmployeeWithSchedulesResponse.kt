@@ -1,6 +1,5 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto
 
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -21,7 +20,7 @@ data class EmployeeWithSchedulesResponse(
     val startDate: String,
     val endDate: String? = null,
     val positionNotes: String? = null,
-    val code: String? = null,
+    val code: String,
     val restaurantName: String,
     val schedules: List<EmployeeScheduleResponse> = emptyList()
 )
