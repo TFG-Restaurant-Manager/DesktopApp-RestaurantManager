@@ -21,6 +21,10 @@ class OrderHistoryViewModel(
     private val _orders = MutableStateFlow<UiState<List<Order>>>(UiState.Idle)
     val orders: StateFlow<UiState<List<Order>>> = _orders.asStateFlow()
 
+    fun resetState() {
+        _orders.value = UiState.Idle
+    }
+
     fun loadOrderHistory() {
         viewModelScope.launch {
             try {

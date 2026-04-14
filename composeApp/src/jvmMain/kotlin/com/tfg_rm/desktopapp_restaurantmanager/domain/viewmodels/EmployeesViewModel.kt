@@ -6,7 +6,6 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,11 +42,14 @@ class EmployeesViewModel(
     private val _scheduleState = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val scheduleState = _scheduleState.asStateFlow()
 
+    fun resetState() {
+        _employees.value = UiState.Idle
+    }
+
     fun loadEmployees() {
         _employees.value = UiState.Loading
         viewModelScope.launch {
             try {
-                delay(1000)
                 val result = service.getEmployees()
                 _employees.value = UiState.Success(result)
             } catch (_: UnresolvedAddressException) {

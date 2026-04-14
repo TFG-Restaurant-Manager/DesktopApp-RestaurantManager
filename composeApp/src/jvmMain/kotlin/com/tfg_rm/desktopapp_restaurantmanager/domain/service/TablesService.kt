@@ -8,7 +8,7 @@ class TablesService(
     private val repository: TablesRepository,
     private val repositoryDuo: TablesOrdersRepository
 ) {
-    suspend fun getTables(): List<Table>      = repositoryDuo.getTablesAndOrders()
+    suspend fun getTables(): List<Table> = repositoryDuo.getTablesAndOrders()
         .distinctBy { it.tableId }
         .map {
             Table(
@@ -20,7 +20,10 @@ class TablesService(
                 status = it.status
             )
         }
+
     suspend fun addTable(table: Table) = repository.addTable(table)
-    suspend fun updateTable(table: Table)     = repository.updateTable(table)
-    suspend fun deleteTable(id: Int)          = repository.deleteTable(id)
+    suspend fun updateTable(table: Table) = repository.updateTable(table)
+    suspend fun deleteTable(id: Int) = repository.deleteTable(id)
+
+    fun clearCache() = repositoryDuo.clearCache()
 }

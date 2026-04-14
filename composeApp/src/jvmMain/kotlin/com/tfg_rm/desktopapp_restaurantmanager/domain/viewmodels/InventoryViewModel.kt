@@ -23,6 +23,10 @@ class InventoryViewModel(
     private val _categories = MutableStateFlow<List<String>>(emptyList())
     val categories: StateFlow<List<String>> = _categories.asStateFlow()
 
+    fun resetState() {
+        _ingredients.value = UiState.Idle
+    }
+
     fun loadInventory() {
         _ingredients.value = UiState.Loading
         viewModelScope.launch {

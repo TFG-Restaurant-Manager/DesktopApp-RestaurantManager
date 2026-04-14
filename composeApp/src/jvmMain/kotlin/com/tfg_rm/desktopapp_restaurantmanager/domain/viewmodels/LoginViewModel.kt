@@ -14,7 +14,7 @@ sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
     object Success : AuthState()
-    object LogOut : AuthState()
+    data class LogOut(val error: Boolean = false) : AuthState()
     data class Error(val msg: String) : AuthState()
 }
 
@@ -28,7 +28,7 @@ class LoginViewModel(
     init {
         viewModelScope.launch {
             SessionManager.sessionExpired.collect {
-                _authState.value = AuthState.LogOut
+                _authState.value = AuthState.LogOut(true)
             }
         }
     }
@@ -68,9 +68,11 @@ class LoginViewModel(
                     when {
                         e.message?.contains("Invalid credentials") == true ->
                             Strings.t("login.error.invalid_credentials")
+
                         e.message?.contains("Unable to resolve host") == true ||
                                 e.message?.contains("UnknownHostException") == true ->
                             Strings.t("login.error.connection")
+
                         else -> Strings.t("login.error.common")
                     }
                 )
@@ -79,7 +81,7 @@ class LoginViewModel(
     }
 
     fun logout() {
-        _authState.value = AuthState.LogOut
+        _authState.value = AuthState.LogOut(false)
         viewModelScope.launch { service.logout() }
     }
 }

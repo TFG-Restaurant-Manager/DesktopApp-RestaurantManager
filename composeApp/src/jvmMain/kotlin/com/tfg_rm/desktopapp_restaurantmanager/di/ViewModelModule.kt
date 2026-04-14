@@ -5,7 +5,6 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val viewModelModule = module {
-
     viewModelOf(::LoginViewModel)
     viewModelOf(::DishesViewModel)
     viewModelOf(::EmployeesViewModel)
@@ -13,7 +12,6 @@ val viewModelModule = module {
     viewModelOf(::EconomyViewModel)
     viewModelOf(::OrdersViewModel)
     viewModelOf(::TablesViewModel)
-    viewModelOf(::EconomyViewModel)
     viewModelOf(::NewOrderViewModel)
     viewModelOf(::OrderHistoryViewModel)
 }

@@ -29,4 +29,5 @@ class OrdersService(
 
     suspend fun addOrder(order: Order): Order = repository.addOrder(order)
     suspend fun updateOrder(order: Order) = repository.updateOrder(order)
+    fun clearCache() = repositoryDuo.clearCache()
 }

@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.tfg_rm.desktopapp_restaurantmanager.ui.navigation.AppScreens
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.*
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -21,8 +21,28 @@ private val selectedBg = Color(0xFFFFF2E6)
 private val unselectedText = Color(0xFF374151)
 
 @Composable
-fun MainScreen(navigate: (String) -> Unit) {
+fun MainScreen(logOut: () -> Unit) {
     var selected by remember { mutableStateOf("orders") }
+
+    val dishesViewModel: DishesViewModel = koinViewModel()
+    val employeesViewModel: EmployeesViewModel = koinViewModel()
+    val inventoryViewModel: InventoryViewModel = koinViewModel()
+    val economyViewModel: EconomyViewModel = koinViewModel()
+    val ordersViewModel: OrdersViewModel = koinViewModel()
+    val tablesViewModel: TablesViewModel = koinViewModel()
+    val newOrderViewModel: NewOrderViewModel = koinViewModel()
+    val orderHistoryViewModel: OrderHistoryViewModel = koinViewModel()
+
+    val logoutResetVMs = {
+        dishesViewModel.resetState()
+        employeesViewModel.resetState()
+        inventoryViewModel.resetState()
+        //economyViewModel.resetState()
+        ordersViewModel.resetState()
+        tablesViewModel.resetState()
+        //newOrderViewModel.resetState()
+        orderHistoryViewModel.resetState()
+    }
 
     // Color constants matching the design
     val logoutColor = Color(0xFFE53935)
@@ -65,7 +85,10 @@ fun MainScreen(navigate: (String) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { navigate(AppScreens.LoginScreen.route) }
+                    .clickable {
+                        logOut()
+                        logoutResetVMs()
+                    }
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -80,19 +103,19 @@ fun MainScreen(navigate: (String) -> Unit) {
         ) {
             when (selected) {
                 "newOrder" -> NewOrderScreen(
-                    viewModel = koinViewModel(),
+                    viewModel = newOrderViewModel,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                "orders" -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "tables" -> TablesScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "employees" -> EmployeesScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "schedule" -> ScheduleScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "inventory" -> InventoryScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "dishes" -> DishesScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "economy" -> EconomyScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "orderHistory" -> OrderHistoryScreen(koinViewModel(), Modifier.fillMaxWidth())
-                else -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "orders" -> OrdersScreen(ordersViewModel, Modifier.fillMaxWidth())
+                "tables" -> TablesScreen(tablesViewModel, Modifier.fillMaxWidth())
+                "employees" -> EmployeesScreen(employeesViewModel, Modifier.fillMaxWidth())
+                "schedule" -> ScheduleScreen(employeesViewModel, Modifier.fillMaxWidth())
+                "inventory" -> InventoryScreen(inventoryViewModel, Modifier.fillMaxWidth())
+                "dishes" -> DishesScreen(dishesViewModel, Modifier.fillMaxWidth())
+                "economy" -> EconomyScreen(economyViewModel, Modifier.fillMaxWidth())
+                "orderHistory" -> OrderHistoryScreen(orderHistoryViewModel, Modifier.fillMaxWidth())
+                else -> OrdersScreen(ordersViewModel, Modifier.fillMaxWidth())
             }
         }
     }

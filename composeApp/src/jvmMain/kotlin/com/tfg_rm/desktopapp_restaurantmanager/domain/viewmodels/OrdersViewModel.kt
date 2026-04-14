@@ -24,6 +24,11 @@ class OrdersViewModel(
     private val _orders = MutableStateFlow<UiState<List<Order>>>(UiState.Idle)
     val orders: StateFlow<UiState<List<Order>>> = _orders.asStateFlow()
 
+    fun resetState() {
+        _orders.value = UiState.Idle
+        service.clearCache()
+    }
+
     fun loadOrders() {
         _orders.value = UiState.Loading
         viewModelScope.launch {

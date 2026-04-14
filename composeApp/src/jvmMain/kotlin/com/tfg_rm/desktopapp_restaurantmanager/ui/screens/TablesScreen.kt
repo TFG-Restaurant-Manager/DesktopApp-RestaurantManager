@@ -192,8 +192,12 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                     newTableDragging = false
 
                                                     if (hoverCol != null && hoverRow != null) {
-                                                        pendingNewCol = hoverCol
-                                                        pendingNewRow = hoverRow
+                                                        val occupied =
+                                                            tables.any { it.posX == hoverCol && it.posY == hoverRow }
+                                                        if (!occupied) {
+                                                            pendingNewCol = hoverCol
+                                                            pendingNewRow = hoverRow
+                                                        }
                                                     }
 
                                                     hoverCol = null

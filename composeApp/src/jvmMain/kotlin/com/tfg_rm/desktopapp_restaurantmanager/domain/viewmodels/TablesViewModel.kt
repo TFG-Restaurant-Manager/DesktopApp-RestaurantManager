@@ -6,7 +6,6 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.TablesService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +23,11 @@ class TablesViewModel(
     private val _sections = MutableStateFlow<List<String>>(listOf("---"))
     val sections: StateFlow<List<String>> = _sections
 
+    fun resetState() {
+        _tables.value = UiState.Idle
+        service.clearCache()
+    }
+
     fun addSection(name: String) {
         if (name !in _sections.value) {
             _sections.value += name
@@ -34,7 +38,6 @@ class TablesViewModel(
         _tables.value = UiState.Loading
         viewModelScope.launch {
             try {
-                delay(2000)
                 val result = service.getTables()
                 _tables.value = UiState.Success(result)
                 _sections.value = (_tables.value as UiState.Success).data.map { it.section }.distinct()

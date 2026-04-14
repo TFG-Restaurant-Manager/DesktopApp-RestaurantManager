@@ -175,7 +175,7 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
                             )
                             Text(
                                 Strings.t("screen.dishes.table.ingredients"),
-                                Modifier.weight(2.5f),
+                                Modifier.weight(2f),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -185,7 +185,10 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
-                            Spacer(Modifier.width(100.dp))
+                            Text(
+                                "",// Hueco para opciones de los platos
+                                Modifier.weight(1.5f)
+                            )
                         }
                         HorizontalDivider()
 
@@ -332,7 +335,7 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
         )
         Text(
             text = ingredientsSummary,
-            modifier = Modifier.weight(2.5f),
+            modifier = Modifier.weight(2f),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2
@@ -351,19 +354,22 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
                 )
             }
         }
-        Row(Modifier.width(100.dp), horizontalArrangement = Arrangement.End) {
+        Column(
+            modifier = Modifier.weight(1.5f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             TextButton(onClick = onEdit) {
                 Text(
-                    Strings.t("screen.dishes.action.edit"),
+                    "Editar",
                     color = dishOrange,
-                    style = MaterialTheme.typography.labelSmall
+                    fontSize = MaterialTheme.typography.labelSmall.fontSize
                 )
             }
             TextButton(onClick = onDelete) {
                 Text(
-                    Strings.t("screen.dishes.action.delete"),
+                    "Eliminar",
                     color = Color(0xFFD32F2F),
-                    style = MaterialTheme.typography.labelSmall
+                    fontSize = MaterialTheme.typography.labelSmall.fontSize
                 )
             }
         }

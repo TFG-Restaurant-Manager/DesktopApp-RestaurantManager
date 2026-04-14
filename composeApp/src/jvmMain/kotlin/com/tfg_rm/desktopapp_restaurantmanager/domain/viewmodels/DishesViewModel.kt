@@ -7,7 +7,6 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.DishesService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,12 +25,15 @@ class DishesViewModel(
     private val _availableIngredients = MutableStateFlow<UiState<List<Ingredient>>>(UiState.Idle)
     val availableIngredients: StateFlow<UiState<List<Ingredient>>> = _availableIngredients.asStateFlow()
 
+    fun resetState() {
+        _dishes.value = UiState.Idle
+    }
+
     fun loadDishes() {
         _dishes.value = UiState.Loading
         _availableIngredients.value = UiState.Loading
         viewModelScope.launch {
             try {
-                delay(1000)
                 val resultDishes = service.getDishes()
                 val resultIngredients = service.getIngredients()
                 _dishes.value = UiState.Success(resultDishes)

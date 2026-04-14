@@ -238,116 +238,10 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Weekly table
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Box(modifier = Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) {
-                        Column(modifier = Modifier.width(1208.dp)) {
-                            // Header Row
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = Strings.t("screen.schedule.employee_column"),
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF334155),
-                                    modifier = Modifier.width(180.dp)
-                                )
-                                DAYS.forEach { day ->
-                                    Text(
-                                        text = dayNames[day] ?: "",
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF334155),
-                                        modifier = Modifier.width(140.dp),
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-
-                            HorizontalDivider(color = Color(0xFFE2E8F0))
-
-                            // Employee Rows
-                            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                                employees.forEach { emp ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth()
-                                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Employee info
-                                        Column(modifier = Modifier.width(180.dp).padding(end = 16.dp)) {
-                                            Text(
-                                                text = emp.name,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF0F172A),
-                                                fontSize = 15.sp
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = emp.roleName,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color(0xFF64748B)
-                                            )
-                                        }
-
-                                        // Day columns
-                                        DAYS.forEach { day ->
-                                            val shift = emp.schedules
-                                            Box(modifier = Modifier.width(140.dp).padding(horizontal = 8.dp)) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(42.dp)
-                                                        .background(
-                                                            color = if (!shift.isEmpty()) Color(0xFFDCFCE7) else Color(
-                                                                0xFFF1F5F9
-                                                            ),
-                                                            shape = RoundedCornerShape(8.dp)
-                                                        )
-                                                        .clickable { editTarget = Pair(emp, day) },
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    if (!shift.isEmpty()) {
-                                                        Column {
-                                                            shift.forEach { pair ->
-                                                                Text(
-                                                                    text = "${
-                                                                        pair.first.format(
-                                                                            DateTimeFormatter.ofPattern("HH:mm")
-                                                                        )
-                                                                    }-${
-                                                                        pair.second.format(
-                                                                            DateTimeFormatter.ofPattern("HH:mm")
-                                                                        )
-                                                                    }",
-                                                                    style = MaterialTheme.typography.bodySmall,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    color = Color(0xFF16A34A)
-                                                                )
-                                                            }
-                                                        }
-                                                    } else {
-                                                        Text(
-                                                            text = Strings.t("screen.schedule.day.rest"),
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            fontWeight = FontWeight.Medium,
-                                                            color = Color(0xFF94A3B8)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    HorizontalDivider(color = Color(0xFFE2E8F0))
-                                }
-                            }
-                        }
-                    }
-                }
+                WeeklyTable(
+                    employees = employees,
+                    { editTarget = it }
+                )
             }
 
             // Shift edit dialog
@@ -370,6 +264,158 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
 }
 
 @Composable
+private fun WeeklyTable(
+    employees: List<Employee>,
+    editTarget: (Pair<Employee, DayOfWeek>) -> Unit
+) {
+    val horizontalScroll = rememberScrollState()
+    val verticalScroll = rememberScrollState()
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(horizontalScroll)
+        ) {
+
+            Column(
+                modifier = Modifier.width(IntrinsicSize.Max)
+            ) {
+
+                // HEADER
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = Strings.t("screen.schedule.employee_column"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF334155),
+                        modifier = Modifier.width(180.dp)
+                    )
+
+                    DAYS.forEach { day ->
+                        Text(
+                            text = dayNames[day] ?: "",
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF334155),
+                            modifier = Modifier.width(140.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = Color(0xFFE2E8F0))
+
+                // BODY (VERTICAL SCROLL)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(verticalScroll)
+                ) {
+
+                    employees.forEach { emp ->
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            // EMPLOYEE INFO
+                            Column(
+                                modifier = Modifier
+                                    .width(180.dp)
+                                    .padding(end = 16.dp)
+                            ) {
+                                Text(
+                                    text = emp.name,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A),
+                                    fontSize = 15.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = emp.roleName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF64748B)
+                                )
+                            }
+
+                            // DAYS
+                            DAYS.forEach { day ->
+
+                                val shift = emp.schedules
+
+                                Box(
+                                    modifier = Modifier
+                                        .width(140.dp)
+                                        .padding(horizontal = 8.dp)
+                                ) {
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(42.dp)
+                                            .background(
+                                                color = if (shift.isNotEmpty())
+                                                    Color(0xFFDCFCE7)
+                                                else
+                                                    Color(0xFFF1F5F9),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .clickable {
+                                                editTarget(Pair(emp, day))
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+
+                                        if (shift.isNotEmpty()) {
+                                            Column {
+                                                shift.forEach { pair ->
+                                                    Text(
+                                                        text = "${pair.first.format(DateTimeFormatter.ofPattern("HH:mm"))}-${
+                                                            pair.second.format(
+                                                                DateTimeFormatter.ofPattern("HH:mm")
+                                                            )
+                                                        }",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFF16A34A)
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            Text(
+                                                text = Strings.t("screen.schedule.day.rest"),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.Medium,
+                                                color = Color(0xFF94A3B8)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 🔥 DIVIDER FULL WIDTH (IMPORTANTE)
+                        HorizontalDivider(color = Color(0xFFE2E8F0))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ShiftEditDialog(
     employee: Employee,
     day: DayOfWeek,
@@ -380,12 +426,12 @@ private fun ShiftEditDialog(
 ) {
     var startText by remember {
         mutableStateOf(
-            currentShift.first().first.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "09:00"
+            currentShift.firstOrNull()?.first?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "09:00"
         )
     }
     var endText by remember {
         mutableStateOf(
-            currentShift.first().second.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "17:00"
+            currentShift.firstOrNull()?.second?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "17:00"
         )
     }
     var error by remember { mutableStateOf<String?>(null) }

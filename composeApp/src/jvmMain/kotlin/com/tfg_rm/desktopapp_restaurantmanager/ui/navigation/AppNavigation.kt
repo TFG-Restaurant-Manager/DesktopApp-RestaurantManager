@@ -1,12 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.ui.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.AuthState
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.LoginViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.LoginScreen
@@ -29,10 +23,12 @@ fun AppNavigation() {
             is AuthState.Success -> {
                 currentScreen = AppScreens.MainScreen.route
             }
+
             is AuthState.LogOut -> {
                 currentScreen = AppScreens.LoginScreen.route
                 loginViewModel.resetState()
             }
+
             else -> {}
         }
     }
@@ -41,9 +37,10 @@ fun AppNavigation() {
         AppScreens.LoginScreen.route -> {
             LoginScreen(viewModel = loginViewModel)
         }
+
         AppScreens.MainScreen.route -> {
             MainScreen(
-                navigate = { route -> currentScreen = route }
+                { loginViewModel.logout() }
             )
         }
     }

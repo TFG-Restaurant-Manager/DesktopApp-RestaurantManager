@@ -55,7 +55,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
             val creatingEmployee = remember { mutableStateOf(false) }
             val editingPaswordEmployee = remember { mutableStateOf<Employee?>(null) }
 
-            LaunchedEffect(Unit) { viewModel.loadEmployees() }
             LaunchedEffect(createState) {
                 if (createState is CreateEmployeeState.Success) {
                     creatingEmployee.value = false
