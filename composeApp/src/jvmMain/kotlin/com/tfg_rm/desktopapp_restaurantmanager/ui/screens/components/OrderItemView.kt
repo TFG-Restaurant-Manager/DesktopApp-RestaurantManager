@@ -2,37 +2,21 @@ package com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem
+import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
+import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalDateTime
-import androidx.compose.ui.text.style.TextOverflow
-import kotlinx.coroutines.delay
 
 @Composable
 fun OrderItemView(
@@ -53,13 +37,17 @@ fun OrderItemView(
         }
     }
 
-    val duration = try { Duration.between(createdAt, now) } catch (e: Exception) { Duration.ZERO }
+    val duration = try {
+        Duration.between(createdAt, now)
+    } catch (_: Exception) {
+        Duration.ZERO
+    }
     val totalSeconds = duration.seconds.coerceAtLeast(0)
-    val totalMins    = totalSeconds / 60
-    val secsRem      = totalSeconds % 60
-    val hours        = totalMins / 60
-    val minsRem      = totalMins % 60
-    val timeDisplay  = if (totalMins < 60)
+    val totalMins = totalSeconds / 60
+    val secsRem = totalSeconds % 60
+    val hours = totalMins / 60
+    val minsRem = totalMins % 60
+    val timeDisplay = if (totalMins < 60)
         String.format("%dm %02ds", totalMins, secsRem)
     else
         String.format("%dh %02dm", hours, minsRem)
@@ -90,8 +78,14 @@ fun OrderItemView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(text = "Mesa $tableId", fontWeight = FontWeight.SemiBold)
-                    Text(text = "Order #$orderId", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = "${Strings.t("screen.orderHistory.col.table")} $tableId",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "${Strings.t("screen.orders.order")} #$orderId",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
                 Box(
                     modifier = Modifier
@@ -105,29 +99,54 @@ fun OrderItemView(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Dish name
-            Text(text = item.dishName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = item.dishName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             if (!item.notes.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = item.notes, style = MaterialTheme.typography.bodySmall, color = Color.Gray, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = item.notes,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Time box
-            Card(colors = CardDefaults.cardColors(containerColor = timeBoxBg),
+            Card(
+                colors = CardDefaults.cardColors(containerColor = timeBoxBg),
                 modifier = Modifier.fillMaxWidth().border(2.dp, timeBoxBorder, RoundedCornerShape(8.dp)),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                    Text(text = "Tiempo", style = MaterialTheme.typography.bodySmall, color = timeBoxBorder)
+                    Text(
+                        text = Strings.t("screen.orders.time"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = timeBoxBorder
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = timeDisplay, style = MaterialTheme.typography.headlineSmall, color = timeTextColor, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        text = timeDisplay,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = timeTextColor,
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(text = "Entrada: ${createdAt.toLocalTime().toString().substring(0, 5)}", style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = "${Strings.t("screen.orders.entry")}: ${createdAt.toLocalTime().toString().substring(0, 5)}",
+                style = MaterialTheme.typography.bodySmall
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -139,7 +158,11 @@ fun OrderItemView(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text(text = "✔  Completar", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = "✔  ${Strings.t("screen.orders.complete")}",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }

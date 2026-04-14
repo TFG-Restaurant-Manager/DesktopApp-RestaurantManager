@@ -2,30 +2,17 @@ package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tfg_rm.desktopapp_restaurantmanager.ui.navigation.AppScreens
-import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.*
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -57,19 +44,19 @@ fun MainScreen(navigate: (String) -> Unit) {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
-                text = "Panel de Control",
+                text = Strings.t("screen.main.controlpanel"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            NavItem("Hacer Pedido", selected == "newOrder") { selected = "newOrder" }
+            NavItem(Strings.t("screen.newOrden.title"), selected == "newOrder") { selected = "newOrder" }
             NavItem(Strings.t("screen.orders.title"), selected == "orders") { selected = "orders" }
             NavItem(Strings.t("screen.tables.title"), selected == "tables") { selected = "tables" }
             NavItem(Strings.t("screen.employees.title"), selected == "employees") { selected = "employees" }
             NavItem(Strings.t("screen.schedule.title"), selected == "schedule") { selected = "schedule" }
             NavItem(Strings.t("screen.inventory.title"), selected == "inventory") { selected = "inventory" }
-            NavItem(Strings.t("screen.dishes.title"),    selected == "dishes")    { selected = "dishes" }
+            NavItem(Strings.t("screen.dishes.title"), selected == "dishes") { selected = "dishes" }
             NavItem(Strings.t("screen.economy.title"), selected == "economy") { selected = "economy" }
             NavItem(Strings.t("screen.orderHistory.title"), selected == "orderHistory") { selected = "orderHistory" }
 
@@ -86,20 +73,24 @@ fun MainScreen(navigate: (String) -> Unit) {
             }
         }
 
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp)
         ) {
             when (selected) {
                 "newOrder" -> NewOrderScreen(
                     viewModel = koinViewModel(),
-                    modifier  = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                 )
+
                 "orders" -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "tables" -> TablesScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "employees" -> EmployeesScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "schedule" -> ScheduleScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "inventory" -> InventoryScreen(koinViewModel(), Modifier.fillMaxWidth())                "dishes"       -> DishesScreen(koinViewModel(), Modifier.fillMaxWidth())                "economy" -> EconomyScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "inventory" -> InventoryScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "dishes" -> DishesScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "economy" -> EconomyScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "orderHistory" -> OrderHistoryScreen(koinViewModel(), Modifier.fillMaxWidth())
                 else -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
             }

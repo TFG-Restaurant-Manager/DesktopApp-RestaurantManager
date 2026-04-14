@@ -11,16 +11,17 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.models
  * @param posX         1-based column position on the grid (DB: pos_x).
  * @param posY         1-based row position on the grid (DB: pos_y).
  * @param active       Whether the table is active.
- * @param sectionId    Optional FK to table_sections.
+ * @param section    Optional FK to table_sections.
+ * @param status    Status of the table (Ocupied, free...)
  */
 data class Table(
     val id: Int,
     val restaurantId: Int = 1,
     val name: String = "",
-    val capacity: Int,
+    var capacity: Int,
     var posX: Int,
     var posY: Int,
     val active: Boolean = true,
-    val section: String? = null,
-    val status: String?
+    val section: String,
+    val status: String
 )

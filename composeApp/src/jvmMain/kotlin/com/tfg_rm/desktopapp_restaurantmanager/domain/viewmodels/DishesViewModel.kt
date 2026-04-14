@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.DishesService
+import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
+import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,20 +19,30 @@ class DishesViewModel(
     private val service: DishesService
 ) : ViewModel() {
 
-    private val _dishes = MutableStateFlow<List<Dishes>>(emptyList())
-    val dishes: StateFlow<List<Dishes>> = _dishes.asStateFlow()
 
-    private val _availableIngredients = MutableStateFlow<List<Ingredient>>(emptyList())
-    val availableIngredients: StateFlow<List<Ingredient>> = _availableIngredients.asStateFlow()
+    private val _dishes = MutableStateFlow<UiState<List<Dishes>>>(UiState.Idle)
+    val dishes: StateFlow<UiState<List<Dishes>>> = _dishes.asStateFlow()
+
+    private val _availableIngredients = MutableStateFlow<UiState<List<Ingredient>>>(UiState.Idle)
+    val availableIngredients: StateFlow<UiState<List<Ingredient>>> = _availableIngredients.asStateFlow()
 
     fun loadDishes() {
+        _dishes.value = UiState.Loading
+        _availableIngredients.value = UiState.Loading
         viewModelScope.launch {
             try {
-                _dishes.value = service.getDishes()
-                _availableIngredients.value = service.getIngredients()
-            } catch (e: UnresolvedAddressException) {
+                delay(1000)
+                val resultDishes = service.getDishes()
+                val resultIngredients = service.getIngredients()
+                _dishes.value = UiState.Success(resultDishes)
+                _availableIngredients.value = UiState.Success(resultIngredients)
+            } catch (_: UnresolvedAddressException) {
+                _dishes.value = UiState.Error(Strings.t("errors.ipadressnotexist"))
+                _availableIngredients.value = UiState.Error(Strings.t("errors.ipadressnotexist"))
                 println("Error on loadDishes in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
+                _dishes.value = UiState.Error(Strings.t("errors.undefined"))
+                _availableIngredients.value = UiState.Error(Strings.t("errors.undefined"))
                 e.printStackTrace()
                 println("Error on loadDishes in DishesViewModel")
             }
@@ -40,10 +53,12 @@ class DishesViewModel(
         viewModelScope.launch {
             try {
                 service.addDish(dish)
-                _dishes.update { currentList ->
-                    currentList + dish
+                _dishes.update { state ->
+                    if (state is UiState.Success) {
+                        UiState.Success(state.data + dish)
+                    } else state
                 }
-            } catch (e: UnresolvedAddressException) {
+            } catch (_: UnresolvedAddressException) {
                 println("Error on addDish in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -56,14 +71,18 @@ class DishesViewModel(
         viewModelScope.launch {
             try {
                 service.updateDish(dish)
-                _dishes.value.map { currentDish ->
-                    if (currentDish.id == dish.id) {
-                        dish
-                    } else {
-                        currentDish
-                    }
+                _dishes.update { state ->
+                    if (state is UiState.Success) {
+                        UiState.Success(state.data.map { currentDish ->
+                            if (currentDish.id == dish.id) {
+                                dish
+                            } else {
+                                currentDish
+                            }
+                        })
+                    } else state
                 }
-            } catch (e: UnresolvedAddressException) {
+            } catch (_: UnresolvedAddressException) {
                 println("Error on updateDish in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -76,8 +95,12 @@ class DishesViewModel(
         viewModelScope.launch {
             try {
                 service.deleteDish(id)
-                _dishes.value.map { it.id != id }
-            } catch (e: UnresolvedAddressException) {
+                _dishes.update { state ->
+                    if (state is UiState.Success) {
+                        UiState.Success(state.data.filter { it.id != id })
+                    } else state
+                }
+            } catch (_: UnresolvedAddressException) {
                 println("Error on deleteDish in DishesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()

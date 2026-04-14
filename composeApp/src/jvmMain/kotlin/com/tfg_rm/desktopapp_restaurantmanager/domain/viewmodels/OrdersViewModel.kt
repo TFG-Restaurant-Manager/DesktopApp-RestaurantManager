@@ -2,9 +2,10 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.FlatEntry
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
+import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
+import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,67 +21,51 @@ class OrdersViewModel(
     private val _title = MutableStateFlow(Strings.t("screen.orders.title"))
     val title: StateFlow<String> = _title.asStateFlow()
 
-    private val _orders = MutableStateFlow<List<Order>>(emptyList())
-    val orders: StateFlow<List<Order>> = _orders.asStateFlow()
+    private val _orders = MutableStateFlow<UiState<List<Order>>>(UiState.Idle)
+    val orders: StateFlow<UiState<List<Order>>> = _orders.asStateFlow()
 
     fun loadOrders() {
+        _orders.value = UiState.Loading
         viewModelScope.launch {
             try {
-                _orders.value = service.getOrders()
-            }catch (e: UnresolvedAddressException) {
+                val result = service.getOrders()
+                _orders.value = UiState.Success(result)
+            } catch (_: UnresolvedAddressException) {
+                _orders.value = UiState.Error(Strings.t("errors.ipadressnotexist"))
                 println("Error on loadOrders in OrdersViewModel, direccion ip no existente")
             } catch (e: Exception) {
+                _orders.value = UiState.Error(Strings.t("errors.undefined"))
                 e.printStackTrace()
                 println("Error on loadOrders in OrdersViewModel")
             }
         }
     }
 
-    fun clear() { }
-
     /** Called by NewOrderScreen to push a finished order into the active list. */
-    fun addOrder(order: Order) {
-        viewModelScope.launch {
-            try {
-                service.addOrder(order)
-                _orders.value = service.getOrders()
-            }catch (e: UnresolvedAddressException) {
-                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
-            } catch (e: Exception) {
-                e.printStackTrace()
-                println("Error on addOrder in OrdersViewModel")
-            }
-        }
-    }
-
-    /** Append extra items to an existing order (used when re-opening a pending order). */
-    fun appendItems(orderId: Int, newItems: List<com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem>) {
-        viewModelScope.launch {
-            try {
-                val order = _orders.value.firstOrNull { it.id == orderId } ?: return@launch
-                val merged = order.orderItemsList.toMutableList().also { it.addAll(newItems) }
-                val updated = order.copy(
-                    total = merged.sumOf { it.unitPrice * it.quantity },
-                    orderItemsList = merged
-                )
-                service.updateOrder(updated)
-                _orders.value = service.getOrders()
-            } catch (e: UnresolvedAddressException) {
-                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
-            } catch (e: Exception) {
-                e.printStackTrace()
-                println("Error on addOrder in OrdersViewModel")
-            }
-        }
-    }
+    // Unused for now, may be used in the near future
+//    fun addOrder(order: Order) {
+//        viewModelScope.launch {
+//            try {
+//                service.addOrder(order)
+//                _orders.update { state ->
+//                    if (state is UiState.Success) {
+//                        UiState.Success(state.data + order)
+//                    } else state
+//                }
+//            } catch (_: UnresolvedAddressException) {
+//                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//                println("Error on addOrder in OrdersViewModel")
+//            }
+//        }
+//    }
 
     fun elapsedMinutes(order: Order): Long = try {
         Duration.between(order.createdAt, LocalDateTime.now()).toMinutes()
-    } catch (e: Exception) { 0 }
-
-    fun elapsedSecondsPart(order: Order): Long = try {
-        Duration.between(order.createdAt, LocalDateTime.now()).seconds % 60
-    } catch (e: Exception) { 0 }
+    } catch (_: Exception) {
+        0
+    }
 
     fun averageTimeLabel(orders: List<Order>): String {
         if (orders.isEmpty()) return "0 min"
@@ -96,7 +81,7 @@ class OrdersViewModel(
     fun completeOrderItem(orderId: Int, itemId: Int) {
         viewModelScope.launch {
             try {
-                val updated = _orders.value.mapNotNull { order ->
+                val updated = (_orders.value as UiState.Success).data.mapNotNull { order ->
                     if (order.id != orderId) return@mapNotNull order
                     val newItems = order.orderItemsList.toMutableList()
                     val idx = newItems.indexOfFirst { it.id == itemId }
@@ -110,8 +95,8 @@ class OrdersViewModel(
                     }
                     if (newItems.isEmpty()) null else order.copy(orderItemsList = newItems)
                 }
-                _orders.value = updated
-            } catch (e: UnresolvedAddressException) {
+                _orders.value = UiState.Success(updated)
+            } catch (_: UnresolvedAddressException) {
                 println("Error on addOrder in OrdersViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()

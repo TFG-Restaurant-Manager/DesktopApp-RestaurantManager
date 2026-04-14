@@ -29,7 +29,7 @@ object NetworkProvider {
             install(WebSockets)
 
             defaultRequest {
-                url("https://commerce-opinion-arena-charlotte.trycloudflare.com/")
+                url("https://negotiation-stops-associates-argue.trycloudflare.com/")
 
                 tokenProvider.getToken()?.let {
                     header("Authorization", "Bearer $it")
@@ -44,7 +44,7 @@ object NetworkProvider {
 
                     println("STATUS: $status")
 
-                    if (status == 401 /*|| status == 403*/) {
+                    if (status == 401 || status == 403) {
                         runBlocking {
                             tokenProvider.clearToken()
                             SessionManager.notifySessionExpired()

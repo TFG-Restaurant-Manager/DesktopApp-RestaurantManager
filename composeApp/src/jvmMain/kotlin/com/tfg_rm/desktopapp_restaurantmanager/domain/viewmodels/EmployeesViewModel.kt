@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
+import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,25 +21,40 @@ sealed class CreateEmployeeState {
     data class Error(val msg: String) : CreateEmployeeState()
 }
 
+sealed class SaveScheduleState {
+    object Idle : SaveScheduleState()
+    object Loading : SaveScheduleState()
+    object Success : SaveScheduleState()
+    data class Error(val message: String) : SaveScheduleState()
+}
+
 class EmployeesViewModel(
     val service: EmployeesService
 ) : ViewModel() {
     private val _title = MutableStateFlow(Strings.t("screen.employees.title"))
     val title: StateFlow<String> = _title.asStateFlow()
 
-    private val _employees = MutableStateFlow<List<Employee>>(emptyList())
-    val employees: StateFlow<List<Employee>> = _employees.asStateFlow()
+    private val _employees = MutableStateFlow<UiState<List<Employee>>>(UiState.Idle)
+    val employees: StateFlow<UiState<List<Employee>>> = _employees.asStateFlow()
 
     private val _createState = MutableStateFlow<CreateEmployeeState>(CreateEmployeeState.Idle)
     val createState: StateFlow<CreateEmployeeState> = _createState.asStateFlow()
 
+    private val _scheduleState = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
+    val scheduleState = _scheduleState.asStateFlow()
+
     fun loadEmployees() {
+        _employees.value = UiState.Loading
         viewModelScope.launch {
             try {
-                _employees.value = service.getEmployees()
-            } catch (e: UnresolvedAddressException) {
+                delay(1000)
+                val result = service.getEmployees()
+                _employees.value = UiState.Success(result)
+            } catch (_: UnresolvedAddressException) {
                 println("Error on loadEmployees in EmployeesViewModel, direccion ip no existente")
+                _employees.value = UiState.Error(Strings.t("errors.ipadressnotexist"))
             } catch (e: Exception) {
+                _employees.value = UiState.Error(Strings.t("errors.undefined"))
                 e.printStackTrace()
                 println("Error on loadEmployees in EmployeesViewModel")
             }
@@ -52,10 +69,16 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 service.updateEmployee(updated)
-                _employees.update { list ->
-                    list.map { if (it.id == updated.id) updated else it }
+                _employees.update { state ->
+                    if (state is UiState.Success) {
+                        UiState.Success(state.data.map { employee ->
+                            if (employee.id == updated.id) {
+                                updated
+                            } else employee
+                        })
+                    } else state
                 }
-            } catch (e: UnresolvedAddressException) {
+            } catch (_: UnresolvedAddressException) {
                 println("Error on updateEmployee in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -68,7 +91,7 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 service.updatePassword(updated, password)
-            } catch (e: UnresolvedAddressException) {
+            } catch (_: UnresolvedAddressException) {
                 println("Error on updateEmployeePassword in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -81,10 +104,12 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 service.deleteEmployee(employee)
-                _employees.update { list ->
-                    list.filter { it.id != employee.id }
+                _employees.update { state ->
+                    if (state is UiState.Success) {
+                        UiState.Success(state.data.filter { it.id != employee.id })
+                    } else state
                 }
-            } catch (e: UnresolvedAddressException) {
+            } catch (_: UnresolvedAddressException) {
                 println("Error on deleteEmployee in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -98,14 +123,22 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 service.addEmployee(employee, password)
-                _employees.value = service.getEmployees()
+                _employees.update { state ->
+                    if (state is UiState.Success) {
+                        UiState.Success(state.data + employee)
+                    } else state
+                }
                 _createState.value = CreateEmployeeState.Success
-            } catch (e: UnresolvedAddressException) {
+            } catch (_: UnresolvedAddressException) {
                 println("Error on addEmployee in EmployeesViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
                 _createState.value = CreateEmployeeState.Error(e.message ?: "Error al crear el empleado")
             }
         }
+    }
+
+    fun saveSchedules() {
+        // Misses implementation
     }
 }
