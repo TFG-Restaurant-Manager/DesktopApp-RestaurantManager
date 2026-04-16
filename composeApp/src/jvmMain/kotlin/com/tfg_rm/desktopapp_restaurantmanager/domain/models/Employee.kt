@@ -1,7 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.models
 
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class Employee(
     val id: Int,
@@ -14,5 +13,5 @@ data class Employee(
     val endDate: LocalDate = LocalDate.now().plusDays(5),
     val positionNotes: String?,
     val active: Boolean = true,
-    val schedules: List<Pair<LocalDateTime, LocalDateTime>>
+    val schedules: List<Shift>
 )

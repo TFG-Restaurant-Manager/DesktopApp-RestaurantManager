@@ -141,6 +141,32 @@ class EmployeesViewModel(
     }
 
     fun saveSchedules() {
-        // Misses implementation
+        _scheduleState.value = UiState.Loading
+        viewModelScope.launch {
+            if (_employees.value is UiState.Success) {
+                try {
+                    service.saveSchedules((_employees.value as UiState.Success<List<Employee>>).data)
+                    _scheduleState.value = UiState.Success(true)
+                } catch (_: UnresolvedAddressException) {
+                    println("Error on saveSchedules in EmployeesViewModel, direccion ip no existente")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    _scheduleState.value = UiState.Error(e.message ?: "Error al actualizar los horarios")
+                }
+            }
+        }
+    }
+
+    fun updateSchedule(updated: Employee) {
+        _employees.update { state ->
+            if (state is UiState.Success) {
+                UiState.Success(state.data.map { employee ->
+                    if (employee.id == updated.id) {
+                        updated
+                    } else employee
+                })
+            } else state
+        }
+        _scheduleState.value = UiState.Idle
     }
 }

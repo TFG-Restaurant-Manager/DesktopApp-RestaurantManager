@@ -17,4 +17,6 @@ class EmployeesService(
     suspend fun deleteEmployee(employee: Employee) = repository.deleteEmployee(employee)
 
     suspend fun addEmployee(employee: Employee, password: String) = repository.addEmployee(employee, password)
+
+    suspend fun saveSchedules(employees: List<Employee>) = repository.saveSchedules(employees)
 }

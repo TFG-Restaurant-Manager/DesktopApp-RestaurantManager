@@ -4,6 +4,7 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.EmployeesR
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployee
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployeeRegisterRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployeeUpdateRequest
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toScheduleSend
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 
 class EmployeesRepository(
@@ -23,4 +24,7 @@ class EmployeesRepository(
 
     suspend fun addEmployee(employee: Employee, password: String) =
         remote.registerEmployee(employee.toEmployeeRegisterRequest(password))
+
+    suspend fun saveSchedules(employees: List<Employee>) =
+        remote.updateSchedules(employees.flatMap { it.toScheduleSend() })
 }

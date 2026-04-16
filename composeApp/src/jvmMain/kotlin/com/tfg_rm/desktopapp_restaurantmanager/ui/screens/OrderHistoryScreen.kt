@@ -5,10 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderHistorical
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrderHistoryViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
@@ -50,8 +47,8 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
             )
         }
 
-        is UiState.Success<List<Order>> -> {
-            val orders = (state as UiState.Success<List<Order>>).data
+        is UiState.Success<List<OrderHistorical>> -> {
+            val orders = (state as UiState.Success<List<OrderHistorical>>).data
 
             val totalRevenue = orders.sumOf { it.total }
             val today = java.time.LocalDate.now()
@@ -78,6 +75,16 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                    Button(
+                        onClick = { viewModel.loadOrderHistory() },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF6A00),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(Strings.t("reload"))
                     }
                 }
 
@@ -185,10 +192,10 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
 }
 
 @Composable
-private fun OrderHistoryRow(order: Order) {
+private fun OrderHistoryRow(order: OrderHistorical) {
     val fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("es"))
-    val itemsSummary = if (order.orderItemsList.isEmpty()) "—"
-    else order.orderItemsList.joinToString(", ") {
+    val itemsSummary = if (order.items.isEmpty()) "—"
+    else order.items.joinToString(", ") {
         "${it.dishName} ×${it.quantity}"
     }.let { if (it.length > 60) it.take(57) + "…" else it }
 
@@ -199,14 +206,19 @@ private fun OrderHistoryRow(order: Order) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "#${order.id}",
+            text = "#${order.orderId}",
             modifier = Modifier.width(48.dp),
             fontWeight = FontWeight.Medium,
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF64748B)
         )
         Text(
-            text = "Mesa ${order.tableId}",
+            text = when (order.type) {
+                "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${order.tableId}"
+                "DELIVERY" -> Strings.t("screen.orderHistory.col.delivery")
+                "PICKUP" -> Strings.t("screen.orderHistory.col.pickup")
+                else -> "---"
+            },
             modifier = Modifier.width(80.dp),
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyMedium
@@ -240,10 +252,15 @@ private fun OrderHistoryRow(order: Order) {
 @Composable
 private fun StatusBadge(status: String) {
     val (bg, fg, label) = when (status.uppercase()) {
-        "CREATED" -> Triple(Color(0xFFEFF6FF), Color(0xFF1D4ED8), "Creado")
-        "COOKED" -> Triple(Color(0xFFFFF7ED), Color(0xFFC2410C), "Cocinado")
-        "DELIVERED" -> Triple(Color(0xFFF0FDF4), Color(0xFF15803D), "Entregado")
-        "PAID" -> Triple(Color(0xFFF0FDF4), Color(0xFF166534), "Pagado")
+        "CREATED" -> Triple(Color(0xFFEFF6FF), Color(0xFF1D4ED8), Strings.t("screen.orderHistory.col.status.created"))
+        "COOKED" -> Triple(Color(0xFFFFF7ED), Color(0xFFC2410C), Strings.t("screen.orderHistory.col.status.cooked"))
+        "DELIVERED" -> Triple(
+            Color(0xFFF0FDF4),
+            Color(0xFF15803D),
+            Strings.t("screen.orderHistory.col.status.delivered")
+        )
+
+        "PAID" -> Triple(Color(0xFFF0FDF4), Color(0xFF166534), Strings.t("screen.orderHistory.col.status.paid"))
         else -> Triple(Color(0xFFF1F5F9), Color(0xFF475569), status)
     }
     Box(

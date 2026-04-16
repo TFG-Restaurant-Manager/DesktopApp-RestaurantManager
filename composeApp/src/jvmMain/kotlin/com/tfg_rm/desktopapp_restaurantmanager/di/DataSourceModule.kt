@@ -12,6 +12,5 @@ val dataSourceModule = module {
     singleOf(::ScheduleRemoteDataSource)
     singleOf(::TablesRemoteDataSource)
     singleOf(::TablesOrdersDataSource)
-    singleOf(::OrdersRemoteDataSource)
     singleOf(::InventoryRemoteDataSource)
 }

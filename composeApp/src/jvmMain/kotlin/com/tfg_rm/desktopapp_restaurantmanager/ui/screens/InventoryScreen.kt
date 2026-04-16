@@ -1,10 +1,8 @@
 package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -60,7 +58,11 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
             val displayed = if (selectedCategory == Strings.t("screen.inventory.filter.all")) ingredients
             else ingredients.filter { it.category == selectedCategory }
 
-            Column(modifier = modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp)) {
+            Column(
+                modifier = modifier.fillMaxSize()
+                    .padding(horizontal = 32.dp, vertical = 24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
 
                 // ── Header ──────────────────────────────────────────────────────────
                 Row(
@@ -198,31 +200,14 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    LazyRow(
-                        modifier = Modifier.padding(12.dp),
+                    Row(
+                        modifier = Modifier.padding(12.dp).horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val allCategories = listOf(Strings.t("screen.inventory.filter.all")) + categories
-                        items(allCategories) { cat ->
+                        allCategories.forEach { cat ->
                             val selected = cat == selectedCategory
-//                    Box(
-//                        modifier = Modifier
-//                            .background(
-//                                color = if (selected) Orange else Color(0xFFF8FAFC),
-//                                shape = RoundedCornerShape(20.dp)
-//                            )
-//                            .clickable { selectedCategory = cat }
-//                            .padding(horizontal = 16.dp, vertical = 8.dp),
-//                        contentAlignment = Alignment.Center
-//                    ) {
-//                        Text(
-//                            text = cat,
-//                            color = if (selected) Color.White else Color(0xFF334155),
-//                            fontWeight = FontWeight.Medium,
-//                            fontSize = 14.sp
-//                        )
-//                    }
                             Button(
                                 onClick = { selectedCategory = cat },
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
@@ -245,189 +230,11 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ── Table ─────────────────────────────────────────────────────────────
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        // Table header
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = Strings.t("screen.inventory.table.product"),
-                                modifier = Modifier.weight(2f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Text(
-                                text = Strings.t("screen.inventory.table.category"),
-                                modifier = Modifier.weight(1.5f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Text(
-                                text = Strings.t("screen.inventory.table.quantity"),
-                                modifier = Modifier.weight(1.5f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Text(
-                                text = Strings.t("screen.inventory.table.minimum"),
-                                modifier = Modifier.weight(1.5f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Text(
-                                text = Strings.t("screen.inventory.table.price_unit"),
-                                modifier = Modifier.weight(1.5f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Text(
-                                text = Strings.t("screen.inventory.table.total_value"),
-                                modifier = Modifier.weight(1.5f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Text(
-                                text = Strings.t("screen.inventory.table.status"),
-                                modifier = Modifier.weight(1f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Text(
-                                text = Strings.t("screen.inventory.table.usable_in_dishes"),
-                                modifier = Modifier.weight(1.2f),
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Spacer(modifier = Modifier.weight(1.2f))
-                        }
-
-                        HorizontalDivider(color = Color(0xFFE2E8F0))
-
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(displayed) { ingredient ->
-                                val isLow = ingredient.stockQuantity <= ingredient.minimumStock
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = ingredient.name,
-                                        modifier = Modifier.weight(2f),
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
-                                    )
-
-                                    Box(modifier = Modifier.weight(1.5f)) {
-                                        Surface(
-                                            shape = RoundedCornerShape(16.dp),
-                                            color = Color(0xFFF8FAFC)
-                                        ) {
-                                            Text(
-                                                text = ingredient.category,
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                                color = Color(0xFF64748B),
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
-
-                                    Text(
-                                        text = "${ingredient.stockQuantity.toDisplayString()} ${ingredient.unit}",
-                                        modifier = Modifier.weight(1.5f),
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isLow) Color(0xFFDC2626) else Color(0xFF0F172A)
-                                    )
-
-                                    Text(
-                                        text = "${ingredient.minimumStock.toDisplayString()} ${ingredient.unit}",
-                                        modifier = Modifier.weight(1.5f),
-                                        color = Color(0xFF64748B),
-                                        fontWeight = FontWeight.Medium
-                                    )
-
-                                    Text(
-                                        text = "${ingredient.costUnit}€",
-                                        modifier = Modifier.weight(1.5f),
-                                        color = Color(0xFF334155),
-                                        fontWeight = FontWeight.Medium
-                                    )
-
-                                    Text(
-                                        text = String.format("%.2f€", ingredient.stockQuantity * ingredient.costUnit),
-                                        modifier = Modifier.weight(1.5f),
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
-                                    )
-
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = if (isLow) Color(0xFFFEE2E2) else Color(0xFFDCFCE7)
-                                        ) {
-                                            Text(
-                                                text = if (isLow) Strings.t("screen.inventory.status.low") else Strings.t(
-                                                    "screen.inventory.status.ok"
-                                                ),
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                                color = if (isLow) Color(0xFFDC2626) else Color(0xFF16A34A),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-
-                                    Row(
-                                        modifier = Modifier.weight(1.2f),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = if (ingredient.usableInDishes) Color(0xFFDCFCE7) else Color(
-                                                0xFFF1F5F9
-                                            )
-                                        ) {
-                                            Text(
-                                                text = if (ingredient.usableInDishes) Strings.t("screen.ingredient.usable.yes") else Strings.t(
-                                                    "screen.ingredient.usable.no"
-                                                ),
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                                color = if (ingredient.usableInDishes) Color(0xFF16A34A) else Color(
-                                                    0xFF94A3B8
-                                                ),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            IconButton(
-                                                onClick = { editTarget = ingredient },
-                                                modifier = Modifier.size(36.dp)
-                                            ) {
-                                                Text("✎", color = Color(0xFF3B82F6), fontSize = 18.sp)
-                                            }
-                                            IconButton(
-                                                onClick = { deleteTarget = ingredient },
-                                                modifier = Modifier.size(36.dp)
-                                            ) {
-                                                Text("🗑", color = Color(0xFFEF4444), fontSize = 18.sp)
-                                            }
-                                        }
-                                    }
-                                }
-                                HorizontalDivider(color = Color(0xFFE2E8F0))
-                            }
-                        }
-                    }
-                }
+                IngredientsTable(
+                    displayed = displayed,
+                    { editTarget = it },
+                    { deleteTarget = it }
+                )
             }
 
             if (showAddDialog) {
@@ -722,4 +529,263 @@ private fun CategoryManagerDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(text = Strings.t("screen.category_manager.close")) } }
     )
+}
+
+@Composable
+private fun IngredientsTable(
+    displayed: List<Ingredient>,
+    onEdit: (Ingredient) -> Unit,
+    onDelete: (Ingredient) -> Unit
+) {
+    @Composable
+    fun TableCell(
+        modifier: Modifier,
+        contentAlignment: Alignment = Alignment.CenterStart,
+        content: @Composable BoxScope.() -> Unit
+    ) {
+        Box(
+            modifier = modifier
+                .padding(horizontal = 4.dp),
+            contentAlignment = contentAlignment
+        ) {
+            content()
+        }
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TableCell(modifier = Modifier.weight(2.3f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.product"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1.5f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.category"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1.4f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.quantity"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1.4f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.minimum"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1.2f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.price_unit"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1.4f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.total_value"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.status"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1.2f)) {
+                    Text(
+                        text = Strings.t("screen.inventory.table.usable_in_dishes"),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+
+                TableCell(modifier = Modifier.weight(1.1f)) {}
+            }
+
+            HorizontalDivider(color = Color(0xFFE2E8F0))
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                displayed.forEach { ingredient ->
+                    val isLow = ingredient.stockQuantity <= ingredient.minimumStock
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TableCell(modifier = Modifier.weight(2.3f)) {
+                            Text(
+                                text = ingredient.name,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
+                            )
+                        }
+
+                        TableCell(modifier = Modifier.weight(1.5f)) {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFFF8FAFC)
+                            ) {
+                                Text(
+                                    text = ingredient.category,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                    color = Color(0xFF64748B),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        TableCell(modifier = Modifier.weight(1.4f)) {
+                            Text(
+                                text = "${ingredient.stockQuantity.toDisplayString()} ${ingredient.unit}",
+                                fontWeight = FontWeight.Bold,
+                                color = if (isLow) Color(0xFFDC2626) else Color(0xFF0F172A)
+                            )
+                        }
+
+                        TableCell(modifier = Modifier.weight(1.4f)) {
+                            Text(
+                                text = "${ingredient.minimumStock.toDisplayString()} ${ingredient.unit}",
+                                color = Color(0xFF64748B),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        TableCell(modifier = Modifier.weight(1.2f)) {
+                            Text(
+                                text = "${ingredient.costUnit}€",
+                                color = Color(0xFF334155),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        TableCell(modifier = Modifier.weight(1.4f)) {
+                            Text(
+                                text = String.format(
+                                    "%.2f€",
+                                    ingredient.stockQuantity * ingredient.costUnit
+                                ),
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
+                            )
+                        }
+
+                        TableCell(modifier = Modifier.weight(1f)) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isLow) Color(0xFFFEE2E2) else Color(0xFFDCFCE7)
+                            ) {
+                                Text(
+                                    text = if (isLow) {
+                                        Strings.t("screen.inventory.status.low")
+                                    } else {
+                                        Strings.t("screen.inventory.status.ok")
+                                    },
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                    color = if (isLow) Color(0xFFDC2626) else Color(0xFF16A34A),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        TableCell(modifier = Modifier.weight(1.2f)) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (ingredient.usableInDishes) {
+                                    Color(0xFFDCFCE7)
+                                } else {
+                                    Color(0xFFF1F5F9)
+                                }
+                            ) {
+                                Text(
+                                    text = if (ingredient.usableInDishes) {
+                                        Strings.t("screen.ingredient.usable.yes")
+                                    } else {
+                                        Strings.t("screen.ingredient.usable.no")
+                                    },
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    color = if (ingredient.usableInDishes) {
+                                        Color(0xFF16A34A)
+                                    } else {
+                                        Color(0xFF94A3B8)
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        TableCell(
+                            modifier = Modifier.weight(1.1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = { onEdit(ingredient) },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Text(
+                                        text = "✎",
+                                        color = Color(0xFF3B82F6),
+                                        fontSize = 18.sp
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { onDelete(ingredient) },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Text(
+                                        text = "🗑",
+                                        color = Color(0xFFEF4444),
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFFE2E8F0))
+                }
+            }
+        }
+    }
 }

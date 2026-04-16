@@ -3,10 +3,9 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.OrdersRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderItemRequest
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toOrderHistorical
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem
-import java.time.LocalDateTime
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderHistorical
 
 class OrdersRepository(
     private val remote: OrdersRemoteDataSource
@@ -39,7 +38,7 @@ class OrdersRepository(
         }
     }
 
-    suspend fun getOrderHistory(): List<Order> = listOf()
+    suspend fun getOrderHistory(): List<OrderHistorical> = remote.getOrdersHistorical().map { it.toOrderHistorical() }
 
     suspend fun updateOrder(updated: Order) {
         // In implementation

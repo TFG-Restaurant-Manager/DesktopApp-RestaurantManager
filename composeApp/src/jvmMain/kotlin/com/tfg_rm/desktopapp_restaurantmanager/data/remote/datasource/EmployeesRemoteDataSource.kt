@@ -3,6 +3,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.EmployeeRegisterRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.EmployeeUpdateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.EmployeeWithSchedulesResponse
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.ScheduleSend
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -36,5 +37,11 @@ class EmployeesRemoteDataSource(
     suspend fun updatePassword(employeeId: Int, newPassword: String) =
         client.put("api/employee/$employeeId/password") {
             setBody(newPassword)
+        }
+
+    suspend fun updateSchedules(scheduleSend: List<ScheduleSend>) =
+        client.put("api/employee/schedules") {
+            contentType(ContentType.Application.Json)
+            setBody(scheduleSend)
         }
 }

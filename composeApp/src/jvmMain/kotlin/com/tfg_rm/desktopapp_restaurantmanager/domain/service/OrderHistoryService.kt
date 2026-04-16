@@ -1,10 +1,10 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.service
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.OrdersRepository
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderHistorical
 
 class OrderHistoryService(
     private val ordersRepository: OrdersRepository
 ) {
-    suspend fun getHistory(): List<Order> = ordersRepository.getOrderHistory()
+    suspend fun getHistory(): List<OrderHistorical> = ordersRepository.getOrderHistory()
 }

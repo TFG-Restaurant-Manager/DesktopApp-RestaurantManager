@@ -513,14 +513,11 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                                     ((table.posX - 1) * (cellSize + cellGap).toPx()).roundToInt()
                                                                 val baseY =
                                                                     ((table.posY - 1) * (cellSize + cellGap).toPx()).roundToInt()
-                                                                if (isDragging) {
-                                                                    IntOffset(
-                                                                        (baseX + dragOffset.x).roundToInt(),
-                                                                        (baseY + dragOffset.y).roundToInt()
-                                                                    )
-                                                                } else {
-                                                                    IntOffset(baseX, baseY)
-                                                                }
+
+                                                                IntOffset(
+                                                                    x = if (isDragging) (baseX + dragOffset.x).roundToInt() else baseX,
+                                                                    y = if (isDragging) (baseY + dragOffset.y).roundToInt() else baseY
+                                                                )
                                                             }
                                                             .size(cellSize)
                                                             .shadow(
@@ -530,51 +527,82 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                             .clip(RoundedCornerShape(14.dp))
                                                             .background(tableOrange)
                                                             .then(
-                                                                Modifier.pointerInput(table.id) {
+                                                                Modifier.pointerInput(tables) {
                                                                     detectDragGestures(
-                                                                        onDragStart = {
+                                                                        onDragStart = { touchOffset ->
                                                                             draggingId = table.id
-                                                                            dragOffset = Offset.Zero
-                                                                            dragStartBase = Offset(
-                                                                                (table.posX - 1) * (cellSize + cellGap).toPx(),
+
+                                                                            val baseX =
+                                                                                (table.posX - 1) * (cellSize + cellGap).toPx()
+                                                                            val baseY =
                                                                                 (table.posY - 1) * (cellSize + cellGap).toPx()
+
+                                                                            dragStartBase = Offset(baseX, baseY)
+
+                                                                            // Importante: empezamos compensando dónde tocó el usuario
+                                                                            dragOffset = Offset(
+                                                                                x = touchOffset.x - cellSize.toPx() / 2,
+                                                                                y = touchOffset.y - cellSize.toPx() / 2
                                                                             )
-                                                                            hoverCol = null
-                                                                            hoverRow = null
+
+                                                                            hoverCol = table.posX
+                                                                            hoverRow = table.posY
                                                                         },
                                                                         onDrag = { change, amount ->
                                                                             change.consume()
+
                                                                             dragOffset += amount
+
                                                                             val cellPx = (cellSize + cellGap).toPx()
+
                                                                             val absoluteX =
                                                                                 dragStartBase.x + dragOffset.x
                                                                             val absoluteY =
                                                                                 dragStartBase.y + dragOffset.y
+
                                                                             val col =
                                                                                 ((absoluteX + cellSize.toPx() / 2) / cellPx).toInt() + 1
                                                                             val row =
                                                                                 ((absoluteY + cellSize.toPx() / 2) / cellPx).toInt() + 1
+
                                                                             hoverCol = col.coerceIn(1, gridColumns)
                                                                             hoverRow = row.coerceIn(1, gridRows)
                                                                         },
                                                                         onDragEnd = {
                                                                             if (hoverCol != null && hoverRow != null) {
-                                                                                val occupied =
-                                                                                    tables.any { it.posX == hoverCol && it.posY == hoverRow }
-                                                                                if (!occupied) {
+                                                                                val occupied = tables.find {
+                                                                                    it.id != table.id &&
+                                                                                            it.posX == hoverCol &&
+                                                                                            it.posY == hoverRow
+                                                                                }
+
+                                                                                if (occupied == null) {
                                                                                     viewModel.moveTable(
                                                                                         table.id,
                                                                                         hoverCol!!,
                                                                                         hoverRow!!,
                                                                                         actualSection
                                                                                     )
+                                                                                } else {
+                                                                                    println(
+                                                                                        "Ocupado por mesa id: ${occupied.id} " +
+                                                                                                "mesa${occupied.id} posX ${occupied.posX} " +
+                                                                                                "posY ${occupied.posY}"
+                                                                                    )
                                                                                 }
                                                                             }
+
                                                                             draggingId = null
+                                                                            dragOffset = Offset.Zero
                                                                             hoverCol = null
                                                                             hoverRow = null
                                                                         },
-                                                                        onDragCancel = { draggingId = null }
+                                                                        onDragCancel = {
+                                                                            draggingId = null
+                                                                            dragOffset = Offset.Zero
+                                                                            hoverCol = null
+                                                                            hoverRow = null
+                                                                        }
                                                                     )
                                                                 }
                                                             ),

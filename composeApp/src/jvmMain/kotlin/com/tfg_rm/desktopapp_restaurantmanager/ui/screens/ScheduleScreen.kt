@@ -16,8 +16,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Shift
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
-import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.SaveScheduleState
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import java.time.DayOfWeek
@@ -71,7 +71,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
         is UiState.Success<List<Employee>> -> {
             var weekStart by remember { mutableStateOf(LocalDate.now().with(DayOfWeek.MONDAY)) }
             val employees = (state as UiState.Success<List<Employee>>).data
-            val saveState = viewModel.scheduleState
+            val saveState = viewModel.scheduleState.collectAsState()
             // Editing state: pair of (employee, day) being edited
             var editTarget by remember { mutableStateOf<Pair<Employee, DayOfWeek>?>(null) }
 
@@ -80,11 +80,15 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
 
 
             val totalHours = employees.sumOf { employee ->
-                employee.schedules.sumOf {
-                    val mins = java.time.Duration.between(it.first, it.second).toMinutes()
+                employee.schedules.filter {
+                    val dia = it.startDateTime.toLocalDate()
+
+                    weekStart.equals(dia.minusDays((dia.dayOfWeek.value - 1).toLong()))
+                }.sumOf {
+                    val mins = java.time.Duration.between(it.startDateTime, it.endDateTime).toMinutes()
                     if (mins < 0) 0L else mins
                 }
-            } / 60
+            } / 60 / employees.size
 
             Column(modifier = modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp)) {
 
@@ -152,7 +156,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 OutlinedButton(
-                                    onClick = { weekStart.minusDays(7) },
+                                    onClick = { weekStart = weekStart.minusDays(7) },
                                     shape = RoundedCornerShape(8.dp),
                                     border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
@@ -161,7 +165,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                                     Text(text = "←", fontWeight = FontWeight.Bold)
                                 }
                                 OutlinedButton(
-                                    onClick = { weekStart.plusDays(7) },
+                                    onClick = { weekStart = weekStart.plusDays(7) },
                                     shape = RoundedCornerShape(8.dp),
                                     border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
@@ -171,12 +175,12 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                                 }
                                 Button(
                                     onClick = { viewModel.saveSchedules() },
-                                    enabled = saveState !is SaveScheduleState.Loading,
+                                    enabled = saveState.value !is UiState.Loading,
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.height(36.dp)
                                 ) {
-                                    if (saveState is SaveScheduleState.Loading) {
+                                    if (saveState.value is UiState.Loading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(16.dp),
                                             color = Color.White,
@@ -184,17 +188,17 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                                         )
                                     } else {
                                         Text(
-                                            text = if (saveState is SaveScheduleState.Success) "✓ Guardado" else "Guardar",
+                                            text = if (saveState.value is UiState.Success) "✓ Guardado" else "Guardar",
                                             color = Color.White,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                 }
                             }
-                            if (saveState is SaveScheduleState.Error) {
+                            if (saveState.value is UiState.Error) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = (saveState as SaveScheduleState.Error).message,
+                                    text = (saveState.value as UiState.Error).message,
                                     color = Color(0xFFEF4444),
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -240,6 +244,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                 // Weekly table
                 WeeklyTable(
                     employees = employees,
+                    weekStart = weekStart,
                     { editTarget = it }
                 )
             }
@@ -251,10 +256,16 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                     employee = emp,
                     day = day,
                     weekStart = weekStart,
-                    currentShift = emp.schedules.filter { it.first.toLocalDate().isEqual(shiftDate) },
+                    currentShift = emp.schedules.filter { it.startDateTime.toLocalDate().isEqual(shiftDate) },
                     onDismiss = { editTarget = null },
-                    onSave = { employee ->
-                        viewModel.updateEmployee(employee)
+                    onSave = { employee, schedules ->
+                        val updatedEmployee = employee.copy(
+                            schedules = employee.schedules
+                                .filterNot { it.startDateTime.toLocalDate().equals(shiftDate) }
+                                .plus(schedules)
+                        )
+
+                        viewModel.updateSchedule(updatedEmployee)
                         editTarget = null
                     }
                 )
@@ -266,6 +277,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
 @Composable
 private fun WeeklyTable(
     employees: List<Employee>,
+    weekStart: LocalDate,
     editTarget: (Pair<Employee, DayOfWeek>) -> Unit
 ) {
     val horizontalScroll = rememberScrollState()
@@ -353,7 +365,9 @@ private fun WeeklyTable(
                             // DAYS
                             DAYS.forEach { day ->
 
-                                val shift = emp.schedules
+                                val shift = emp.schedules.filter {
+                                    it.startDateTime.toLocalDate().isEqual(weekStart.plusDays((day.value - 1).toLong()))
+                                }
 
                                 Box(
                                     modifier = Modifier
@@ -382,8 +396,14 @@ private fun WeeklyTable(
                                             Column {
                                                 shift.forEach { pair ->
                                                     Text(
-                                                        text = "${pair.first.format(DateTimeFormatter.ofPattern("HH:mm"))}-${
-                                                            pair.second.format(
+                                                        text = "${
+                                                            pair.startDateTime.format(
+                                                                DateTimeFormatter.ofPattern(
+                                                                    "HH:mm"
+                                                                )
+                                                            )
+                                                        }-${
+                                                            pair.endDateTime.format(
                                                                 DateTimeFormatter.ofPattern("HH:mm")
                                                             )
                                                         }",
@@ -405,8 +425,6 @@ private fun WeeklyTable(
                                 }
                             }
                         }
-
-                        // 🔥 DIVIDER FULL WIDTH (IMPORTANTE)
                         HorizontalDivider(color = Color(0xFFE2E8F0))
                     }
                 }
@@ -420,24 +438,35 @@ private fun ShiftEditDialog(
     employee: Employee,
     day: DayOfWeek,
     weekStart: LocalDate,
-    currentShift: List<Pair<LocalDateTime, LocalDateTime>>,
+    currentShift: List<Shift>,
     onDismiss: () -> Unit,
-    onSave: (Employee) -> Unit
+    onSave: (Employee, List<Shift>) -> Unit
 ) {
-    var startText by remember {
-        mutableStateOf(
-            currentShift.firstOrNull()?.first?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "09:00"
-        )
-    }
-    var endText by remember {
-        mutableStateOf(
-            currentShift.firstOrNull()?.second?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "17:00"
-        )
-    }
-    var error by remember { mutableStateOf<String?>(null) }
+    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+    val shiftDate = weekStart.plusDays((day.value - 1).toLong())
 
-    // Preset shifts
-    val presets = listOf("09:00-17:00", "10:00-18:00", "12:00-20:00", "11:00-19:00", "08:00-16:00")
+    var schedules by remember {
+        mutableStateOf(
+            if (currentShift.isNotEmpty()) {
+                currentShift
+            } else {
+                listOf(
+                    Shift(
+                        startDateTime = LocalDateTime.of(
+                            shiftDate,
+                            LocalTime.of(9, 0)
+                        ),
+                        endDateTime = LocalDateTime.of(
+                            shiftDate,
+                            LocalTime.of(17, 0)
+                        )
+                    )
+                )
+            }
+        )
+    }
+
+    var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -445,105 +474,134 @@ private fun ShiftEditDialog(
         shape = RoundedCornerShape(16.dp),
         title = {
             Text(
-                text = String.format(Strings.t("screen.shift.title_format"), employee.name, dayNames[day]),
+                text = String.format(
+                    Strings.t("screen.shift.title_format"),
+                    employee.name,
+                    dayNames[day]
+                ) + " ${shiftDate.dayOfMonth} ${shiftDate.month.name} ${shiftDate.year}",
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
                 color = Color(0xFF0F172A)
             )
         },
         text = {
-            Column(modifier = Modifier.widthIn(min = 320.dp)) {
-                Text(
-                    text = Strings.t("screen.shift.presets_label"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF334155),
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+            Column(
+                modifier = Modifier
+                    .widthIn(min = 420.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        presets.take(3).forEach { preset ->
-                            Box(
-                                modifier = Modifier
-                                    .background(Color(0xFFF8FAFC), RoundedCornerShape(8.dp))
-                                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp))
-                                    .clickable {
-                                        val parts = preset.split("-")
-                                        startText = parts[0]
-                                        endText = parts[1]
+                schedules.forEachIndexed { index, shift ->
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        OutlinedTextField(
+                            value = shift.startDateTime.format(formatter),
+                            onValueChange = { newStart ->
+                                try {
+                                    val startTime = LocalTime.parse(newStart, formatter)
+
+                                    schedules = schedules.toMutableList().apply {
+                                        this[index] = shift.copy(
+                                            startDateTime = LocalDateTime.of(
+                                                shift.startDateTime.toLocalDate(),
+                                                startTime
+                                            )
+                                        )
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
+
+                                    error = null
+                                } catch (_: Exception) {
+                                }
+                            },
+                            label = {
                                 Text(
-                                    text = preset,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF475569),
-                                    fontWeight = FontWeight.Medium
+                                    Strings.t("screen.shift.start_label"),
+                                    color = Color(0xFF64748B)
                                 )
+                            },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        OutlinedTextField(
+                            value = shift.endDateTime.format(formatter),
+                            onValueChange = { newEnd ->
+                                try {
+                                    val endTime = LocalTime.parse(newEnd, formatter)
+
+                                    schedules = schedules.toMutableList().apply {
+                                        this[index] = shift.copy(
+                                            endDateTime = LocalDateTime.of(
+                                                shift.endDateTime.toLocalDate(),
+                                                endTime
+                                            )
+                                        )
+                                    }
+
+                                    error = null
+                                } catch (_: Exception) {
+                                }
+                            },
+                            label = {
+                                Text(
+                                    Strings.t("screen.shift.end_label"),
+                                    color = Color(0xFF64748B)
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        IconButton(
+                            onClick = {
+                                schedules = schedules.toMutableList().apply {
+                                    removeAt(index)
+                                }
                             }
+                        ) {
+                            Text(
+                                text = "✕",
+                                color = Color(0xFFEF4444),
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        presets.drop(3).forEach { preset ->
-                            Box(
-                                modifier = Modifier
-                                    .background(Color(0xFFF8FAFC), RoundedCornerShape(8.dp))
-                                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp))
-                                    .clickable {
-                                        val parts = preset.split("-")
-                                        startText = parts[0]
-                                        endText = parts[1]
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = preset,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF475569),
-                                    fontWeight = FontWeight.Medium
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                if (schedules.size < 4) {
+                    OutlinedButton(
+                        onClick = {
+                            schedules = schedules + Shift(
+                                startDateTime = LocalDateTime.of(
+                                    shiftDate,
+                                    LocalTime.of(9, 0)
+                                ),
+                                endDateTime = LocalDateTime.of(
+                                    shiftDate,
+                                    LocalTime.of(17, 0)
                                 )
-                            }
-                        }
+                            )
+                        },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("+ ${Strings.t("screen.shift.add_shift")}")
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = Color(0xFFE2E8F0))
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = Strings.t("screen.shift.custom_title"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF334155),
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = startText,
-                        onValueChange = { startText = it; error = null },
-                        label = { Text(Strings.t("screen.shift.start_label"), color = Color(0xFF64748B)) },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    Text(text = "→", color = Color(0xFF94A3B8), fontSize = 20.sp)
-                    OutlinedTextField(
-                        value = endText,
-                        onValueChange = { endText = it; error = null },
-                        label = { Text(Strings.t("screen.shift.end_label"), color = Color(0xFF64748B)) },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                }
                 if (error != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = error!!,
                         color = Color(0xFFEF4444),
@@ -557,43 +615,38 @@ private fun ShiftEditDialog(
             Button(
                 onClick = {
                     try {
-                        val fmt2 = DateTimeFormatter.ofPattern("HH:mm")
-                        val shiftDate = weekStart.plusDays((day.value - 1).toLong())
-                        val startTime = LocalTime.parse(startText.trim(), fmt2)
-                        val endTime = LocalTime.parse(endText.trim(), fmt2)
-                        if (!endTime.isAfter(startTime)) {
-                            error = Strings.t("screen.shift.error.end_after_start"); return@Button
+                        schedules.forEach { shift ->
+                            if (!shift.endDateTime.toLocalTime()
+                                    .isAfter(shift.startDateTime.toLocalTime())
+                            ) {
+                                throw IllegalArgumentException(
+                                    Strings.t("screen.shift.error.end_after_start")
+                                )
+                            }
                         }
-                        onSave(employee)
-                    } catch (_: Exception) {
-                        error = Strings.t("screen.shift.error.format_invalid")
+
+                        onSave(employee, schedules)
+                    } catch (e: Exception) {
+                        error = e.message ?: Strings.t("screen.shift.error.format_invalid")
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(text = Strings.t("screen.shift.save"), color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = Strings.t("screen.shift.save"),
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         },
         dismissButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!currentShift.isEmpty()) {
-                    OutlinedButton(
-                        onClick = { onSave(employee) },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
-                        border = BorderStroke(1.dp, Color(0xFFEF4444)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(text = Strings.t("screen.shift.remove"), fontWeight = FontWeight.SemiBold)
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(
-                        text = Strings.t("screen.shift.cancel"),
-                        color = Color(0xFF64748B),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = Strings.t("screen.shift.cancel"),
+                    color = Color(0xFF64748B),
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     )

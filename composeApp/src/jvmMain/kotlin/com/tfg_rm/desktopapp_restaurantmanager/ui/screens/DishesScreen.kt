@@ -360,14 +360,14 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
         ) {
             TextButton(onClick = onEdit) {
                 Text(
-                    "Editar",
+                    Strings.t("screen.dishes.action.edit"),
                     color = dishOrange,
                     fontSize = MaterialTheme.typography.labelSmall.fontSize
                 )
             }
             TextButton(onClick = onDelete) {
                 Text(
-                    "Eliminar",
+                    Strings.t("screen.dishes.action.delete"),
                     color = Color(0xFFD32F2F),
                     fontSize = MaterialTheme.typography.labelSmall.fontSize
                 )
