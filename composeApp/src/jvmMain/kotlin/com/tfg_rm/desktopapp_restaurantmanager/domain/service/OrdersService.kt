@@ -30,4 +30,10 @@ class OrdersService(
     suspend fun addOrder(order: Order): Order = repository.addOrder(order)
     suspend fun updateOrder(order: Order) = repository.updateOrder(order)
     fun clearCache() = repositoryDuo.clearCache()
+
+    fun observeMessages() = repository.observeMessages()
+
+    suspend fun sendMessage(message: String) = repository.sendMessage(message)
+
+    suspend fun disconnectWS() = repository.disconnectWS()
 }

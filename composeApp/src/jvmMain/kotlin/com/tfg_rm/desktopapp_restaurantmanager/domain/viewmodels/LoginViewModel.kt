@@ -38,6 +38,7 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 val hasToken = service.loadToken()
+                connectWS()
                 _authState.value = if (hasToken) AuthState.Success else AuthState.Idle
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -61,6 +62,7 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 service.requestToken(code = code, password = password)
+                connectWS()
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -77,6 +79,12 @@ class LoginViewModel(
                     }
                 )
             }
+        }
+    }
+
+    fun connectWS() {
+        viewModelScope.launch {
+            service.connectBS()
         }
     }
 

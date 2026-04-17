@@ -13,4 +13,6 @@ class LoginService(
 
     fun loadToken(): Boolean =
         authRepository.loadToken()
+
+    suspend fun connectBS() = authRepository.connectWS()
 }

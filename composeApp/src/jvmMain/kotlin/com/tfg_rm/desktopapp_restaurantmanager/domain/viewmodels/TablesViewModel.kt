@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.nio.channels.UnresolvedAddressException
+import kotlin.coroutines.cancellation.CancellationException
 
 class TablesViewModel(
     private val service: TablesService
@@ -39,6 +40,7 @@ class TablesViewModel(
         viewModelScope.launch {
             try {
                 val result = service.getTables()
+                observeSocketMessages()
                 _tables.value = UiState.Success(result)
                 _sections.value = (_tables.value as UiState.Success).data.map { it.section }.distinct()
             } catch (_: UnresolvedAddressException) {
@@ -146,6 +148,21 @@ class TablesViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error on removeTable in tables view model")
+            }
+        }
+    }
+
+    private fun observeSocketMessages() {
+        viewModelScope.launch {
+            try {
+                service.observeMessages().collect { message ->
+                    println("Mensaje recibido en DishesViewModel: $message")
+                }
+            } catch (_: CancellationException) {
+                service.disconnectWS()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println(e.message)
             }
         }
     }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.nio.channels.UnresolvedAddressException
+import kotlin.coroutines.cancellation.CancellationException
 
 class InventoryViewModel(
     private val service: IngredientsService
@@ -32,6 +33,7 @@ class InventoryViewModel(
         viewModelScope.launch {
             try {
                 val response = service.getIngredients()
+                observeSocketMessages()
                 _ingredients.value = UiState.Success(response)
                 _categories.value = (_ingredients.value as UiState.Success).data
                     .map { it.category }.distinct()
@@ -100,6 +102,21 @@ class InventoryViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error on deleteIngredient in InventoryViewModel")
+            }
+        }
+    }
+
+    private fun observeSocketMessages() {
+        viewModelScope.launch {
+            try {
+                service.observeMessages().collect { message ->
+                    println("Mensaje recibido en DishesViewModel: $message")
+                }
+            } catch (_: CancellationException) {
+                service.disconnectWS()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println(e.message)
             }
         }
     }

@@ -13,4 +13,10 @@ class IngredientsService(
     suspend fun updateIngredient(ingredient: Ingredient) = repository.updateIngredient(ingredient)
 
     suspend fun deleteIngredient(id: Int) = repository.deleteIngredient(id)
+
+    fun observeMessages() = repository.observeMessages()
+
+    suspend fun sendMessage(message: String) = repository.sendMessage(message)
+
+    suspend fun disconnectWS() = repository.disconnectWS()
 }

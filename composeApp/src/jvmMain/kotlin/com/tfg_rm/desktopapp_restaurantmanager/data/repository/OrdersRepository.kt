@@ -4,11 +4,13 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.OrdersRemo
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderItemRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toOrderHistorical
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SocketManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderHistorical
 
 class OrdersRepository(
-    private val remote: OrdersRemoteDataSource
+    private val remote: OrdersRemoteDataSource,
+    private val socketManager: SocketManager
 ) {
 
     suspend fun getOrders(): List<Order> = remote.getOrders()
@@ -43,4 +45,10 @@ class OrdersRepository(
     suspend fun updateOrder(updated: Order) {
         // In implementation
     }
+
+    fun observeMessages() = socketManager.messages
+
+    suspend fun sendMessage(message: String) = socketManager.sendMessage(message)
+
+    suspend fun disconnectWS() = socketManager.disconnect()
 }

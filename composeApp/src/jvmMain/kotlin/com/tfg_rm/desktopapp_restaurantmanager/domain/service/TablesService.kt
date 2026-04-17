@@ -26,4 +26,10 @@ class TablesService(
     suspend fun deleteTable(id: Int) = repository.deleteTable(id)
 
     fun clearCache() = repositoryDuo.clearCache()
+
+    fun observeMessages() = repository.observeMessages()
+
+    suspend fun sendMessage(message: String) = repository.sendMessage(message)
+
+    suspend fun disconnectWS() = repository.disconnectWS()
 }

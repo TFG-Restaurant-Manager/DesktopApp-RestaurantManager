@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import java.nio.channels.UnresolvedAddressException
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.coroutines.cancellation.CancellationException
 
 class OrdersViewModel(
     val service: OrdersService
@@ -34,6 +35,7 @@ class OrdersViewModel(
         viewModelScope.launch {
             try {
                 val result = service.getOrders()
+                observeSocketMessages()
                 _orders.value = UiState.Success(result)
             } catch (_: UnresolvedAddressException) {
                 _orders.value = UiState.Error(Strings.t("errors.ipadressnotexist"))
@@ -106,6 +108,21 @@ class OrdersViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error on addOrder in OrdersViewModel")
+            }
+        }
+    }
+
+    private fun observeSocketMessages() {
+        viewModelScope.launch {
+            try {
+                service.observeMessages().collect { message ->
+                    println("Mensaje recibido en DishesViewModel: $message")
+                }
+            } catch (_: CancellationException) {
+                service.disconnectWS()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println(e.message)
             }
         }
     }
