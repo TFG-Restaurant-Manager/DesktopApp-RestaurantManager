@@ -29,7 +29,7 @@ object NetworkProvider {
             install(WebSockets)
 
             defaultRequest {
-                url("https://arrested-book-attend-generations.trycloudflare.com/")
+                url(NetworkConfig.BASE_URL)
 
                 tokenProvider.getToken()?.let {
                     header("Authorization", "Bearer $it")
