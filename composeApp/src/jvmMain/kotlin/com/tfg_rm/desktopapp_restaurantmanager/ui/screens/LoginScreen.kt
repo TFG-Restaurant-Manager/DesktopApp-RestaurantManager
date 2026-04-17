@@ -12,35 +12,53 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tfg_rm.desktopapp_restaurantmanager.ui.navigation.AppScreens
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.AuthState
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.LoginViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 
 @Composable
 fun LoginScreen(
-    navigate: (String) -> Unit
+    viewModel: LoginViewModel
 ) {
     val employeeCode = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
+    val authState by viewModel.authState.collectAsState()
+
+    val isLoading = authState is AuthState.Loading
+    val errorMsg = (authState as? AuthState.Error)?.msg
 
     Column(
         modifier = Modifier
@@ -93,11 +111,17 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                         singleLine = true,
+                        enabled = !isLoading,
                         placeholder = { Text(Strings.t("login.employee_code_placeholder")) },
                         shape = RoundedCornerShape(8.dp)
                     )
 
-                    Text(text = Strings.t("login.password_label"), fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 12.dp))
+                    Text(
+                        text = Strings.t("login.password_label"),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                    var passwordVisible by remember { mutableStateOf(false) }
                     OutlinedTextField(
                         value = password.value,
                         onValueChange = { password.value = it },
@@ -105,20 +129,70 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                         singleLine = true,
+                        enabled = !isLoading,
                         placeholder = { Text(Strings.t("login.password_placeholder")) },
-                        visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        // Si isVisible es true, no aplica transformación (texto plano)
+                        // Si es false, aplica asteriscos
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = if (passwordVisible) "Ocultar" else "Mostrar",
+                                    // En Desktop es bueno que el icono no sea gigante
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                viewModel.login(
+                                    code = employeeCode.value.trim(),
+                                    password = password.value
+                                )
+                            }
+                        )
                     )
 
+                    if (errorMsg != null) {
+                        Text(
+                            text = errorMsg,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+
                     Button(
-                        onClick = { navigate(AppScreens.MainScreen.route) },
+                        onClick = {
+                            viewModel.login(
+                                code = employeeCode.value.trim(),
+                                password = password.value
+                            )
+                        },
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7A00), contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF7A00),
+                            contentColor = Color.White
+                        ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp).padding(end = 8.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            }
                             Text(text = Strings.t("login.button"))
                         }
                     }
