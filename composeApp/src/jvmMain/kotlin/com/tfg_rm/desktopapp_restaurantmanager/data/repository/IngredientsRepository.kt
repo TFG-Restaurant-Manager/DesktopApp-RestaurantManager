@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.InventoryRemoteDataSource
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toIngredient
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toIngredientOperationRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SocketManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 
@@ -13,15 +14,15 @@ class IngredientsRepository(
     suspend fun getIngredients(): List<Ingredient> = dataSource.getIngredients().map { it.toIngredient() }
 
     suspend fun addIngredient(ingredient: Ingredient) {
-        // Misses implementation
+        dataSource.createIngredient(ingredient.toIngredientOperationRequest())
     }
 
     suspend fun updateIngredient(updated: Ingredient) {
-        // MIsses implementation
+        dataSource.updateIngredient(updated.id, updated.toIngredientOperationRequest())
     }
 
     suspend fun deleteIngredient(id: Int) {
-        // Misses implementation
+        dataSource.deleteIngredient(id)
     }
 
     fun observeMessages() = socketManager.messages

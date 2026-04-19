@@ -32,6 +32,7 @@ object NetworkProvider {
                 url(NetworkConfig.BASE_URL)
 
                 tokenProvider.getToken()?.let {
+                    println("Token en la llamada $it")
                     header("Authorization", "Bearer $it")
                 }
             }

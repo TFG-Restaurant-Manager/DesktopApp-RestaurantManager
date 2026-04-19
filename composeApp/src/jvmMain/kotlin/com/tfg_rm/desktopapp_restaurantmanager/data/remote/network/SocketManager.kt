@@ -17,6 +17,7 @@ class SocketManager(
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
     suspend fun connect() {
+        disconnect()
         session = client.webSocketSession {
             url("${NetworkConfig.WS_URL}api/ws")
         }
@@ -44,6 +45,10 @@ class SocketManager(
     }
 
     suspend fun disconnect() {
-        session?.close()
+        session?.let {
+            it.close()
+            session = null
+            println("SocketManager websockets desconectados")
+        }
     }
 }

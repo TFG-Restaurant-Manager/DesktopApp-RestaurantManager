@@ -1,6 +1,8 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper
 
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableOrdersResponse
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.TablesOrders
 
 /**
@@ -27,3 +29,12 @@ fun TableOrdersResponse.toTablesOrders(): TablesOrders {
         orderItems = this.orderItems?.map { it.toOrderItem() }
     )
 }
+
+fun Table.toTableCreateRequest(): TableCreateRequest =
+    TableCreateRequest(
+        tableName = this.name,
+        capacity = this.capacity,
+        posX = this.posX,
+        posY = this.posY,
+        sectionId = 0
+    )

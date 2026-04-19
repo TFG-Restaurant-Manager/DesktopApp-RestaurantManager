@@ -11,11 +11,14 @@ class AuthRepository(
 ) {
     suspend fun requestToken(code: String, password: String) {
         val response = remote.requestToken(code = code, password = password)
-        tokenProvider.setToken(response.token)
+        val token = response.token
+        println("Token antes al meterlo en el token provider")
+        tokenProvider.setToken(token)
     }
 
     suspend fun logout() {
         tokenProvider.clearToken()
+        socketManager.disconnect()
     }
 
     fun loadToken(): Boolean {

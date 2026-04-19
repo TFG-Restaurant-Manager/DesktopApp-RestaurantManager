@@ -28,7 +28,7 @@ class LoginViewModel(
     init {
         viewModelScope.launch {
             SessionManager.sessionExpired.collect {
-                _authState.value = AuthState.LogOut(true)
+                _authState.value = AuthState.LogOut(false)
             }
         }
     }
@@ -38,7 +38,7 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 val hasToken = service.loadToken()
-                connectWS()
+                if (hasToken) connectWS()
                 _authState.value = if (hasToken) AuthState.Success else AuthState.Idle
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -89,7 +89,12 @@ class LoginViewModel(
     }
 
     fun logout() {
-        _authState.value = AuthState.LogOut(false)
-        viewModelScope.launch { service.logout() }
+        viewModelScope.launch {
+            try {
+                service.logout()
+            } finally {
+                _authState.value = AuthState.LogOut(false)
+            }
+        }
     }
 }

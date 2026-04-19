@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -42,8 +43,18 @@ class EmployeesViewModel(
     private val _scheduleState = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val scheduleState = _scheduleState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
+
     fun resetState() {
         _employees.value = UiState.Idle
+        _createState.value = CreateEmployeeState.Idle
+        _scheduleState.value = UiState.Idle
     }
 
     fun loadEmployees() {

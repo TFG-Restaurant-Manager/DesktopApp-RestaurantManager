@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.DishesService
@@ -25,6 +26,14 @@ class DishesViewModel(
 
     private val _availableIngredients = MutableStateFlow<UiState<List<Ingredient>>>(UiState.Idle)
     val availableIngredients: StateFlow<UiState<List<Ingredient>>> = _availableIngredients.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
 
     fun resetState() {
         _dishes.value = UiState.Idle

@@ -8,5 +8,5 @@ data class TableCreateRequest(
     val capacity: Int,
     val posX: Int,
     val posY: Int,
-    val restaurantId: Int
+    val sectionId: Int
 )

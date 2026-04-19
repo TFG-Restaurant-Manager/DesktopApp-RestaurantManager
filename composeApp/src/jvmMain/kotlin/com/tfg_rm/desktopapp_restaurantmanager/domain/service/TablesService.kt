@@ -21,9 +21,9 @@ class TablesService(
             )
         }
 
-    suspend fun addTable(table: Table) = repository.addTable(table)
-    suspend fun updateTable(table: Table) = repository.updateTable(table)
-    suspend fun deleteTable(id: Int) = repository.deleteTable(id)
+    suspend fun addTable(tables: List<Table>) = repository.addTable(tables)
+    suspend fun updateTable(tables: List<Table>) = repository.updateTable(tables)
+    suspend fun deleteTable(tables: List<Table>) = repository.deleteTable(tables)
 
     fun clearCache() = repositoryDuo.clearCache()
 

@@ -1,5 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper
 
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.IngredientOperationRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.IngredientsDto
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 
@@ -15,3 +16,12 @@ fun IngredientsDto.toIngredient(): Ingredient {
         usableInDishes = true
     )
 }
+
+fun Ingredient.toIngredientOperationRequest(): IngredientOperationRequest =
+    IngredientOperationRequest(
+        name = this.name,
+        unit = this.unit,
+        costUnit = this.costUnit,
+        minimumStock = this.minimumStock,
+        categoryId = null// It Misses the category id
+    )

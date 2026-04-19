@@ -1,7 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.TablesRemoteDataSource
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SocketManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 
@@ -16,24 +15,16 @@ class TablesRepository(
 
     suspend fun getTables(): List<Table> = listOf()
 
-    suspend fun addTable(table: Table) {
-        val request = TableCreateRequest(
-            tableName = table.name.ifBlank { "Mesa $nextId" },
-            capacity = table.capacity,
-            posX = table.posX,
-            posY = table.posY,
-            restaurantId = table.restaurantId
-        )
-        remoteDataSource.createTable(request)
+    suspend fun addTable(tables: List<Table>) {
+        //remoteDataSource.updateTables(tables.map { it.toTableCreateRequest() })
     }
 
-    suspend fun updateTable(updated: Table) {
-        println("Log Prueba TablesRepository")
-        sendMessage("Prueba TablesRepository")
+    suspend fun updateTable(tables: List<Table>) {
+        //remoteDataSource.updateTables(tables.map { it.toTableCreateRequest() })
     }
 
-    suspend fun deleteTable(id: Int) {
-        // In implementation
+    suspend fun deleteTable(tables: List<Table>) {
+        //remoteDataSource.updateTables(tables.map { it.toTableCreateRequest() })
     }
 
     fun observeMessages() = socketManager.messages

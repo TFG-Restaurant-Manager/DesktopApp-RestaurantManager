@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.IngredientsService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -23,6 +24,14 @@ class InventoryViewModel(
 
     private val _categories = MutableStateFlow<List<String>>(emptyList())
     val categories: StateFlow<List<String>> = _categories.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
 
     fun resetState() {
         _ingredients.value = UiState.Idle

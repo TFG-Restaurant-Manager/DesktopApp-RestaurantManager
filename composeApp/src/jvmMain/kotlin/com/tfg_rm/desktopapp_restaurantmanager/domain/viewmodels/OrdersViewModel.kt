@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.FlatEntry
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
@@ -25,9 +26,17 @@ class OrdersViewModel(
     private val _orders = MutableStateFlow<UiState<List<Order>>>(UiState.Idle)
     val orders: StateFlow<UiState<List<Order>>> = _orders.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
+
     fun resetState() {
-        _orders.value = UiState.Idle
         service.clearCache()
+        _orders.value = UiState.Idle
     }
 
     fun loadOrders() {
