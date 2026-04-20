@@ -2,11 +2,12 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.TableOrdersResponse
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Section
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.TablesOrders
 
 /**
- * Extension of the [TablesOrdersDto] model to facilitate conversion to a [TablesOrders] domain object.
+ * Extension of the [TableOrdersResponse] model to facilitate conversion to a [TablesOrders] domain object.
  *
  * This function performs the deep mapping of the combined data, including the nested
  * conversion of order items using [toOrderItem].
@@ -16,11 +17,13 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.TablesOrders
 fun TableOrdersResponse.toTablesOrders(): TablesOrders {
     return TablesOrders(
         tableId = this.tableId,
+        tableName = this.tableName,
         capacity = this.capacity,
         posX = this.posX,
         posY = this.posY,
         status = this.status,
         sectionTitle = this.sectionTitle,
+        sectionId = this.sectionId,
         orderId = this.orderId,
         orderStatus = this.orderStatus,
         orderTotal = this.orderTotal,
@@ -32,9 +35,21 @@ fun TableOrdersResponse.toTablesOrders(): TablesOrders {
 
 fun Table.toTableCreateRequest(): TableCreateRequest =
     TableCreateRequest(
+        tableId = this.id,
         tableName = this.name,
         capacity = this.capacity,
         posX = this.posX,
         posY = this.posY,
-        sectionId = 0
+        sectionId = this.section.id
+    )
+
+fun TablesOrders.toTable(): Table =
+    Table(
+        id = this.tableId,
+        name = this.tableName,
+        capacity = this.capacity,
+        section = Section(this.sectionId, this.sectionTitle),
+        posX = this.posX.toInt(),
+        posY = this.posY.toInt(),
+        status = this.status
     )

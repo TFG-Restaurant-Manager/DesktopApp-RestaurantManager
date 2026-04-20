@@ -32,7 +32,7 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
             ErrorScreen(
                 title = Strings.t("screen.employees.error.generic"),
                 message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload"), { viewModel.loadEmployees() })
+                primaryAction = Pair(Strings.t("reload")) { viewModel.loadEmployees() }
             )
         }
 

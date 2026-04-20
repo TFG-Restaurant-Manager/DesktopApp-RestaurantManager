@@ -1,6 +1,7 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.repository
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.TablesRemoteDataSource
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toTableCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SocketManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 
@@ -15,16 +16,8 @@ class TablesRepository(
 
     suspend fun getTables(): List<Table> = listOf()
 
-    suspend fun addTable(tables: List<Table>) {
-        //remoteDataSource.updateTables(tables.map { it.toTableCreateRequest() })
-    }
-
-    suspend fun updateTable(tables: List<Table>) {
-        //remoteDataSource.updateTables(tables.map { it.toTableCreateRequest() })
-    }
-
-    suspend fun deleteTable(tables: List<Table>) {
-        //remoteDataSource.updateTables(tables.map { it.toTableCreateRequest() })
+    suspend fun updateTables(tables: List<Table>) {
+        remoteDataSource.updateTables(tables.map { it.toTableCreateRequest() })
     }
 
     fun observeMessages() = socketManager.messages

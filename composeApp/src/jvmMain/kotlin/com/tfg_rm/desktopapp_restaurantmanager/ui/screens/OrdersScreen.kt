@@ -33,7 +33,7 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
             ErrorScreen(
                 title = Strings.t("screen.orders.error.generic"),
                 message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload"), { viewModel.loadOrders() })
+                primaryAction = Pair(Strings.t("reload")) { viewModel.loadOrders() }
             )
         }
 

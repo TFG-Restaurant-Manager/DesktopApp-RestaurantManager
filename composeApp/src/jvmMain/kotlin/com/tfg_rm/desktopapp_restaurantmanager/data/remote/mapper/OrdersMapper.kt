@@ -7,7 +7,7 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem
 import java.time.LocalDateTime
 
 /**
- * Extension of the [OrderItemDto] model to facilitate conversion to an [OrderItem] domain object.
+ * Extension of the [OrderItemResponse] model to facilitate conversion to an [OrderItem] domain object.
  *
  * This function maps individual line items from their data transfer format (DTO)
  * into a domain model usable by the business logic.

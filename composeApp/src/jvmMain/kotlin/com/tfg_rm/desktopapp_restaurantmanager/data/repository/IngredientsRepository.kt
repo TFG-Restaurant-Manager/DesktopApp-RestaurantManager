@@ -13,8 +13,8 @@ class IngredientsRepository(
 
     suspend fun getIngredients(): List<Ingredient> = dataSource.getIngredients().map { it.toIngredient() }
 
-    suspend fun addIngredient(ingredient: Ingredient) {
-        dataSource.createIngredient(ingredient.toIngredientOperationRequest())
+    suspend fun addIngredient(ingredient: Ingredient): Ingredient {
+        return dataSource.createIngredient(ingredient.toIngredientOperationRequest()).toIngredient()
     }
 
     suspend fun updateIngredient(updated: Ingredient) {

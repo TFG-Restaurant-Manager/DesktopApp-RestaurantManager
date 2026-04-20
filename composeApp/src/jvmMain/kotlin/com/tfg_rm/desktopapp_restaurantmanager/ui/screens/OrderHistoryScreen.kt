@@ -33,7 +33,7 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
             ErrorScreen(
                 title = Strings.t("screen.orderHistory.error.title"),
                 message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload"), { viewModel.loadOrderHistory() })
+                primaryAction = Pair(Strings.t("reload")) { viewModel.loadOrderHistory() }
             )
         }
 
@@ -214,7 +214,7 @@ private fun OrderHistoryRow(order: OrderHistorical) {
         )
         Text(
             text = when (order.type) {
-                "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${order.tableId}"
+                "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${order.tableId ?: ""}"
                 "DELIVERY" -> Strings.t("screen.orderHistory.col.delivery")
                 "PICKUP" -> Strings.t("screen.orderHistory.col.pickup")
                 else -> "---"

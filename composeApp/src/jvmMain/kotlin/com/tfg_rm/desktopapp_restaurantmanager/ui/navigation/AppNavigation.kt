@@ -41,9 +41,7 @@ fun AppNavigation() {
         }
 
         AppScreens.MainScreen.route -> {
-            MainScreen(
-                { loginViewModel.logout() }
-            )
+            MainScreen { loginViewModel.logout() }
         }
     }
 }

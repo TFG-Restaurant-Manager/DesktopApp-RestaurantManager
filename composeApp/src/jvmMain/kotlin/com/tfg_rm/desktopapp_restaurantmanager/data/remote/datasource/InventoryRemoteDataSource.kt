@@ -22,9 +22,9 @@ class InventoryRemoteDataSource(
     suspend fun deleteIngredient(ingredientId: Int) =
         client.delete("api/ingredients/$ingredientId")
 
-    suspend fun createIngredient(request: IngredientOperationRequest) =
+    suspend fun createIngredient(request: IngredientOperationRequest): IngredientsDto =
         client.post("api/ingredients") {
             contentType(ContentType.Application.Json)
             setBody(request)
-        }
+        }.body()
 }

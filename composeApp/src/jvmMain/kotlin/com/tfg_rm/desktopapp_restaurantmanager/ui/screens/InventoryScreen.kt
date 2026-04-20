@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Category
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.InventoryViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -33,7 +34,7 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
             ErrorScreen(
                 title = Strings.t("screen.ingredient.error.generic"),
                 message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload"), { viewModel.loadInventory() })
+                primaryAction = Pair(Strings.t("reload")) { viewModel.loadInventory() }
             )
         }
 
@@ -47,7 +48,7 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
             val ingredients = (state as UiState.Success<List<Ingredient>>).data
             val categories by viewModel.categories.collectAsState()
 
-            var selectedCategory by remember { mutableStateOf(Strings.t("screen.inventory.filter.all")) }
+            var selectedCategory by remember { mutableStateOf(Category(-1, Strings.t("screen.inventory.filter.all"))) }
             var showAddDialog by remember { mutableStateOf(false) }
             var showCategoryDialog by remember { mutableStateOf(false) }
             var editTarget by remember { mutableStateOf<Ingredient?>(null) }
@@ -55,7 +56,7 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
 
             val belowMinimum = ingredients.filter { it.stockQuantity < it.minimumStock }
             val totalValue = ingredients.sumOf { it.stockQuantity * it.costUnit }
-            val displayed = if (selectedCategory == Strings.t("screen.inventory.filter.all")) ingredients
+            val displayed = if (selectedCategory.name == Strings.t("screen.inventory.filter.all")) ingredients
             else ingredients.filter { it.category == selectedCategory }
 
             Column(
@@ -205,7 +206,7 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val allCategories = listOf(Strings.t("screen.inventory.filter.all")) + categories
+                        val allCategories = listOf(Category(-1, Strings.t("screen.inventory.filter.all"))) + categories
                         allCategories.forEach { cat ->
                             val selected = cat == selectedCategory
                             Button(
@@ -217,7 +218,7 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                                 shape = RoundedCornerShape(20.dp)
                             ) {
                                 Text(
-                                    text = cat,
+                                    text = cat.name,
                                     color = if (selected) Color.White else Color(0xFF334155),
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 14.sp
@@ -339,13 +340,13 @@ private fun StatCard(
 @Composable
 private fun IngredientFormDialog(
     title: String,
-    categories: List<String>,
+    categories: List<Category>,
     initial: Ingredient?,
     onDismiss: () -> Unit,
     onConfirm: (Ingredient) -> Unit
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
-    var category by remember { mutableStateOf(initial?.category ?: categories.firstOrNull() ?: "") }
+    var category by remember { mutableStateOf(initial?.category ?: categories.first()) }
     var unit by remember { mutableStateOf(initial?.unit ?: "kg") }
     var stock by remember { mutableStateOf(initial?.stockQuantity?.toString() ?: "") }
     var minStock by remember { mutableStateOf(initial?.minimumStock?.toString() ?: "") }
@@ -371,8 +372,8 @@ private fun IngredientFormDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TextField(
-                        value = category,
-                        onValueChange = { category = it },
+                        value = category?.name ?: "",
+                        onValueChange = { },
                         label = { Text(Strings.t("screen.ingredient.form.category")) },
                         singleLine = true,
                         modifier = Modifier.weight(1f)
@@ -380,7 +381,9 @@ private fun IngredientFormDialog(
                     Column {
                         if (showCatPicker) {
                             categories.forEach { cat ->
-                                TextButton(onClick = { category = cat; showCatPicker = false }) { Text(text = cat) }
+                                TextButton(onClick = {
+                                    category = cat; showCatPicker = false
+                                }) { Text(text = cat.name) }
                             }
                         } else {
                             OutlinedButton(onClick = { showCatPicker = true }) { Text(text = "▾") }
@@ -439,7 +442,7 @@ private fun IngredientFormDialog(
                 val costD = cost.toDoubleOrNull()
                 when {
                     name.isBlank() -> error = Strings.t("screen.ingredient.form.error.name_required")
-                    category.isBlank() -> error = Strings.t("screen.ingredient.form.error.category_required")
+                    category == null -> error = Strings.t("screen.ingredient.form.error.category_required")
                     unit.isBlank() -> error = Strings.t("screen.ingredient.form.error.unit_required")
                     stockD == null -> error = Strings.t("screen.ingredient.form.error.stock_invalid")
                     minD == null -> error = Strings.t("screen.ingredient.form.error.min_stock_invalid")
@@ -451,7 +454,7 @@ private fun IngredientFormDialog(
                             unit = unit.trim(),
                             stockQuantity = stockD,
                             costUnit = costD,
-                            category = category.trim(),
+                            category = category,
                             minimumStock = minD,
                             usableInDishes = usableInDishes
                         )
@@ -465,10 +468,10 @@ private fun IngredientFormDialog(
 
 @Composable
 private fun CategoryManagerDialog(
-    categories: List<String>,
+    categories: List<Category>,
     onDismiss: () -> Unit,
     onAdd: (String) -> Unit,
-    onDelete: (String) -> Unit
+    onDelete: (Category) -> Unit
 ) {
     var newCat by remember { mutableStateOf("") }
 
@@ -512,7 +515,7 @@ private fun CategoryManagerDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = cat, style = MaterialTheme.typography.bodyMedium)
+                                Text(text = cat.name, style = MaterialTheme.typography.bodyMedium)
                                 TextButton(onClick = { onDelete(cat) }) {
                                     Text(
                                         text = Strings.t("screen.category_manager.delete"),
@@ -660,7 +663,7 @@ private fun IngredientsTable(
                                 color = Color(0xFFF8FAFC)
                             ) {
                                 Text(
-                                    text = ingredient.category,
+                                    text = ingredient.category.name,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                     color = Color(0xFF64748B),
                                     fontSize = 13.sp,

@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Section
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.TablesViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -42,9 +43,11 @@ private val cellGap = 16.dp
 @Composable
 fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.tables.collectAsState()
+    var tablesModified by remember { mutableStateOf(false) }
 
     when (state) {
         is UiState.Idle -> {
+            tablesModified = false
             viewModel.loadTables()
         }
 
@@ -53,9 +56,11 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                 title = Strings.t("screen.tables.error.title"),
                 message = (state as UiState.Error).message,
                 primaryAction = Pair(
-                    Strings.t("reload"),
-                    { viewModel.loadTables() }
-                )
+                    Strings.t("reload")
+                ) {
+                    tablesModified = false
+                    viewModel.loadTables()
+                }
             )
         }
 
@@ -66,7 +71,11 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
         is UiState.Success<List<Table>> -> {
             val tablesState = (state as UiState.Success<List<Table>>).data
             // Atributes to observe the section
-            var actualSection by remember { mutableStateOf(tablesState.getOrNull(0)?.section ?: "Sec1") }
+            var actualSection by remember(tablesState) {
+                mutableStateOf(
+                    tablesState.firstOrNull()?.section ?: Section(null, "---")
+                )
+            }
             val sections = viewModel.sections.collectAsState()
             var showNewSectionDialog by remember { mutableStateOf(false) }
 
@@ -324,7 +333,7 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                         .fillMaxWidth()
                                 ) {
                                     OutlinedTextField(
-                                        value = actualSection,
+                                        value = actualSection.name,
                                         onValueChange = {},
                                         modifier = Modifier.fillMaxWidth(),
                                         label = { Text(Strings.t("screen.tables.section.label")) },
@@ -354,7 +363,7 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                         if (sections.value.isNotEmpty()) {
                                             sections.value.forEach { option ->
                                                 DropdownMenuItem(
-                                                    text = { Text(option) },
+                                                    text = { Text(option.name) },
                                                     onClick = {
                                                         actualSection = option
                                                         expanded = false
@@ -380,6 +389,30 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                 }
                             }
                         }
+
+                        if (tablesModified == true) {
+                            TextButton(
+                                onClick = {
+                                    tablesModified = false
+                                    viewModel.loadTables()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(Strings.t("screen.tables.config.cancel"))
+                            }
+                            Button(
+                                onClick = {
+                                    tablesModified = false
+                                    viewModel.saveData()
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = tableOrange
+                                )
+                            ) {
+                                Text(Strings.t("screen.tables.config.save"))
+                            }
+                        }
                     }
                     val scrollStateVertical = rememberScrollState()
                     val scrollStateHorizontal = rememberScrollState()
@@ -390,7 +423,7 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                             .fillMaxSize()
                             .padding(20.dp)
                     ) {
-                        if (actualSection != "---") {
+                        if (actualSection.name != "---") {
                             Surface(
                                 modifier = Modifier.fillMaxSize(),
                                 shape = RoundedCornerShape(16.dp),
@@ -439,7 +472,8 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                 tables.filter {
                                                     it.posX == gridColumns
                                                 }.forEach {
-                                                    viewModel.removeTable(it.id)
+                                                    tablesModified = true
+                                                    viewModel.removeTable(it)
                                                 }
                                                 gridColumns--
                                             }
@@ -449,7 +483,8 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                 tables.filter {
                                                     it.posY == gridRows
                                                 }.forEach {
-                                                    viewModel.removeTable(it.id)
+                                                    tablesModified = true
+                                                    viewModel.removeTable(it)
                                                 }
                                                 gridRows--
                                             }
@@ -577,8 +612,9 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                                                 }
 
                                                                                 if (occupied == null) {
+                                                                                    tablesModified = true
                                                                                     viewModel.moveTable(
-                                                                                        table.id,
+                                                                                        table,
                                                                                         hoverCol!!,
                                                                                         hoverRow!!,
                                                                                         actualSection
@@ -611,7 +647,8 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                         // Contenido de la mesa (ID y Capacidad)
                                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                             Text(
-                                                                table.id.toString(),
+                                                                if (table.name.length >= 3) table.name.substring(3)
+                                                                else table.id.toString(),
                                                                 fontWeight = FontWeight.Bold,
                                                                 fontSize = 32.sp,
                                                                 color = Color.White
@@ -647,7 +684,10 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
 
                                                         // --- Botón Eliminar (Abajo Derecha) ---
                                                         IconButton(
-                                                            onClick = { viewModel.removeTable(table.id) },
+                                                            onClick = {
+                                                                tablesModified = true
+                                                                viewModel.removeTable(table)
+                                                            },
                                                             modifier = Modifier
                                                                 .align(Alignment.BottomEnd)
                                                                 .padding(6.dp)
@@ -712,7 +752,9 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = (1..tables.map { it.id }.size + 1).first { it !in tables.map { it.id }.toSet() }
+                            text = (1..tables.map { it.id }.size + 1).first {
+                                it !in tables.map { it -> it.id }.toSet()
+                            }
                                 .toString(),
                             fontWeight = FontWeight.Bold,
                             fontSize = 32.sp,
@@ -727,7 +769,10 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                 TableConfigDialog(
                     table = table,
                     onDismiss = { configTarget = null },
-                    onSave = { cap -> viewModel.setCapacity(table.id, cap); configTarget = null }
+                    onSave = { cap ->
+                        tablesModified = true
+                        viewModel.setCapacity(table, cap); configTarget = null
+                    }
                 )
             }
 
@@ -740,6 +785,7 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                     row = row,
                     onDismiss = { pendingNewCol = null; pendingNewRow = null },
                     onSave = { cap ->
+                        tablesModified = true
                         viewModel.addTable(col, row, cap, actualSection)
                         pendingNewCol = null
                         pendingNewRow = null
@@ -751,8 +797,8 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                 NewSectionDialog(
                     onDismiss = { showNewSectionDialog = false },
                     onCreate = { newSection ->
-                        viewModel.addSection(newSection)
-                        actualSection = newSection
+                        tablesModified = true
+                        actualSection = viewModel.addSection(newSection)
                         showNewSectionDialog = false
                     }
                 )

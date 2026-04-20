@@ -1,12 +1,8 @@
 package com.tfg_rm.desktopapp_restaurantmanager
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.tfg_rm.desktopapp_restaurantmanager.di.dataSourceModule
-import com.tfg_rm.desktopapp_restaurantmanager.di.networkModule
-import com.tfg_rm.desktopapp_restaurantmanager.di.repositoryModule
-import com.tfg_rm.desktopapp_restaurantmanager.di.serviceModule
-import com.tfg_rm.desktopapp_restaurantmanager.di.viewModelModule
+import com.tfg_rm.desktopapp_restaurantmanager.di.*
 import com.tfg_rm.desktopapp_restaurantmanager.ui.navigation.AppNavigation
 import com.tfg_rm.desktopapp_restaurantmanager.ui.theme.DesktopAppRestaurantManagerTheme
 import org.koin.compose.KoinApplication
@@ -24,7 +20,7 @@ fun App() {
             viewModelModule
         )
     }) {
-        DesktopAppRestaurantManagerTheme() {
+        DesktopAppRestaurantManagerTheme {
             AppNavigation()
         }
     }

@@ -40,7 +40,7 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
             ErrorScreen(
                 title = Strings.t("screen.dish.error.generic"),
                 message = (stateDishes as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload"), { viewModel.loadDishes() })
+                primaryAction = Pair(Strings.t("reload")) { viewModel.loadDishes() }
             )
         }
 
@@ -395,7 +395,7 @@ private fun DishFormDialog(
     var category by remember { mutableStateOf(dish?.categoryName ?: "") }
     var price by remember { mutableStateOf(dish?.price?.toString() ?: "") }
     var available by remember { mutableStateOf(dish?.available ?: true) }
-    var dishIngredients by remember { mutableStateOf(dish?.ingredients ?: emptyList<DishIngredient>()) }
+    var dishIngredients by remember { mutableStateOf(dish?.ingredients ?: emptyList()) }
 
     var dropdownExpanded by remember { mutableStateOf(false) }
     var selectedIngredient by remember { mutableStateOf<Ingredient?>(null) }

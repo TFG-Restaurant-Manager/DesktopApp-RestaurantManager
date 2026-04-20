@@ -3,6 +3,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Category
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.IngredientsService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.nio.channels.UnresolvedAddressException
-import kotlin.coroutines.cancellation.CancellationException
 
 class InventoryViewModel(
     private val service: IngredientsService
@@ -22,8 +22,8 @@ class InventoryViewModel(
     private val _ingredients = MutableStateFlow<UiState<List<Ingredient>>>(UiState.Idle)
     val ingredients: StateFlow<UiState<List<Ingredient>>> = _ingredients.asStateFlow()
 
-    private val _categories = MutableStateFlow<List<String>>(emptyList())
-    val categories: StateFlow<List<String>> = _categories.asStateFlow()
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -42,7 +42,6 @@ class InventoryViewModel(
         viewModelScope.launch {
             try {
                 val response = service.getIngredients()
-                observeSocketMessages()
                 _ingredients.value = UiState.Success(response)
                 _categories.value = (_ingredients.value as UiState.Success).data
                     .map { it.category }.distinct()
@@ -60,10 +59,10 @@ class InventoryViewModel(
     fun addIngredient(ingredient: Ingredient) {
         viewModelScope.launch {
             try {
-                service.addIngredient(ingredient)
+                val newIngredient = service.addIngredient(ingredient)
                 _ingredients.update { state ->
                     if (state is UiState.Success) {
-                        UiState.Success(state.data + ingredient)
+                        UiState.Success(state.data + newIngredient)
                     } else state
                 }
             } catch (_: UnresolvedAddressException) {
@@ -78,6 +77,7 @@ class InventoryViewModel(
     fun updateIngredient(ingredient: Ingredient) {
         viewModelScope.launch {
             try {
+                println("InventoryViewModel update ingredient, ingredient: $ingredient")
                 service.updateIngredient(ingredient)
                 _ingredients.update { state ->
                     if (state is UiState.Success) {
@@ -111,21 +111,6 @@ class InventoryViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error on deleteIngredient in InventoryViewModel")
-            }
-        }
-    }
-
-    private fun observeSocketMessages() {
-        viewModelScope.launch {
-            try {
-                service.observeMessages().collect { message ->
-                    println("Mensaje recibido en DishesViewModel: $message")
-                }
-            } catch (_: CancellationException) {
-                service.disconnectWS()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                println(e.message)
             }
         }
     }

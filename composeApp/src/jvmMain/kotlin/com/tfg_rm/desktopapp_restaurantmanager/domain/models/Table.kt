@@ -15,13 +15,13 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.models
  * @param status    Status of the table (Ocupied, free...)
  */
 data class Table(
-    val id: Int,
+    val id: Int?,
     val restaurantId: Int = 1,
     val name: String = "",
     var capacity: Int,
     var posX: Int,
     var posY: Int,
     val active: Boolean = true,
-    val section: String,
+    val section: Section,
     val status: String
 )

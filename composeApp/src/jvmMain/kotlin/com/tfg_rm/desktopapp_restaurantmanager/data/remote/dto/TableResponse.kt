@@ -11,6 +11,7 @@ data class TableResponse(
     val posY: Int,
     val status: String,
     val sectionTitle: String? = null,
+    val sectionId: Int,
     val orderId: Long? = null,
     val orderStatus: String? = null,
     val orderTotal: Double? = null,

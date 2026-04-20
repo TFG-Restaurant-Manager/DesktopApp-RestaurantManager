@@ -60,7 +60,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
             ErrorScreen(
                 title = Strings.t("screen.shift.error.generic"),
                 message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload"), { viewModel.loadEmployees() })
+                primaryAction = Pair(Strings.t("reload")) { viewModel.loadEmployees() }
             )
         }
 
@@ -72,7 +72,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
             var weekStart by remember { mutableStateOf(LocalDate.now().with(DayOfWeek.MONDAY)) }
             val employees = (state as UiState.Success<List<Employee>>).data
             val saveState = viewModel.scheduleState.collectAsState()
-            // Editing state: pair of (employee, day) being edited
+            // Editing state: a pair of (employee, day) being edited
             var editTarget by remember { mutableStateOf<Pair<Employee, DayOfWeek>?>(null) }
 
             val weekEnd = weekStart.plusDays(6)
@@ -244,9 +244,8 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                 // Weekly table
                 WeeklyTable(
                     employees = employees,
-                    weekStart = weekStart,
-                    { editTarget = it }
-                )
+                    weekStart = weekStart
+                ) { editTarget = it }
             }
 
             // Shift edit dialog
@@ -447,9 +446,7 @@ private fun ShiftEditDialog(
 
     var schedules by remember {
         mutableStateOf(
-            if (currentShift.isNotEmpty()) {
-                currentShift
-            } else {
+            currentShift.ifEmpty {
                 listOf(
                     Shift(
                         startDateTime = LocalDateTime.of(
