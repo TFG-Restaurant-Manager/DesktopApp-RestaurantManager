@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -479,17 +482,57 @@ private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Em
                     label = { Text(text = Strings.t("screen.ingredient.form.name")) },
                     modifier = Modifier.fillMaxWidth()
                 )
+                val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-z]{2,}\$".toRegex()
+
+                val isEmailError = email.isNotEmpty() && !email.matches(emailRegex)
                 TextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = { email = it.trim() }, // trim() para evitar espacios accidentales
                     label = { Text(text = Strings.t("screen.employees.atribute.email")) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = isEmailError, // Se pone rojo si el formato es inválido
+                    supportingText = {
+                        if (isEmailError) {
+                            Text(
+                                text = "Formato de email inválido",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email, // Muestra el teclado con '@' y '.'
+                        imeAction = ImeAction.Next
+                    ),
+                    singleLine = true
                 )
                 TextField(
-                    value = phone ?: "---",
-                    onValueChange = { phone = it },
+                    value = phone ?: "",
+                    onValueChange = { newValue ->
+                        // 1. Filtramos para que solo entren números
+                        val onlyNumbers = newValue.filter { it.isDigit() }
+
+                        // 2. Limitamos a 9 caracteres
+                        if (onlyNumbers.length <= 9) {
+                            phone = onlyNumbers
+                        }
+                    },
                     label = { Text(text = Strings.t("screen.employees.atribute.phone")) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    // Usamos Phone en lugar de Number para que en Android
+                    // salgan símbolos como el "+" si fuera necesario en el futuro
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Phone,
+                        imeAction = ImeAction.Next
+                    ),
+                    isError = phone?.isNotEmpty() == true && (phone?.length ?: 0) < 9,
+                    supportingText = {
+                        if (phone?.isNotEmpty() == true && (phone?.length ?: 0) < 9) {
+                            Text(
+                                text = "Faltan dígitos (mínimo 9)",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 )
                 StableDateSelector(
                     Strings.t("screen.employees.atribute.startdate"),
@@ -637,20 +680,59 @@ private fun NewEmployeeDialog(
                     enabled = !isLoading
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-z]{2,}\$".toRegex()
+
+                val isEmailError = email.isNotEmpty() && !email.matches(emailRegex)
                 TextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = { email = it.trim() }, // trim() para evitar espacios accidentales
                     label = { Text(text = Strings.t("screen.employees.atribute.email")) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    isError = isEmailError, // Se pone rojo si el formato es inválido
+                    supportingText = {
+                        if (isEmailError) {
+                            Text(
+                                text = "Formato de email inválido",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email, // Muestra el teclado con '@' y '.'
+                        imeAction = ImeAction.Next
+                    ),
+                    singleLine = true
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 TextField(
                     value = phone,
-                    onValueChange = { phone = it },
+                    onValueChange = { newValue ->
+                        // 1. Filtramos para que solo entren números
+                        val onlyNumbers = newValue.filter { it.isDigit() }
+
+                        // 2. Limitamos a 9 caracteres
+                        if (onlyNumbers.length <= 9) {
+                            phone = onlyNumbers
+                        }
+                    },
                     label = { Text(text = Strings.t("screen.employees.atribute.phone")) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    // Usamos Phone en lugar de Number para que en Android
+                    // salgan símbolos como el "+" si fuera necesario en el futuro
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Phone,
+                        imeAction = ImeAction.Next
+                    ),
+                    isError = phone.isNotEmpty() && phone.length < 9,
+                    supportingText = {
+                        if (phone.isNotEmpty() && phone.length < 9) {
+                            Text(
+                                text = "Faltan dígitos (mínimo 9)",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 TextField(
@@ -831,19 +913,68 @@ fun StableDateSelector(
             // Campos de texto pequeños para cada parte
             OutlinedTextField(
                 value = day,
-                onValueChange = { if (it.length <= 2) day = it },
+                onValueChange = { newValue ->
+                    val onlyNumbers = newValue.filter { it.isDigit() }
+
+                    if (onlyNumbers.length <= 2) {
+                        if (onlyNumbers.isEmpty()) {
+                            day = "01"
+                        } else {
+                            val dayInt = onlyNumbers.toInt()
+                            val maxDays = try {
+                                val monthInt = month.toIntOrNull() ?: 1
+                                java.time.YearMonth.of(2024, monthInt).lengthOfMonth()
+                            } catch (e: Exception) {
+                                31
+                            }
+
+                            if (dayInt <= maxDays) {
+                                day = onlyNumbers
+                            }
+                        }
+                    }
+                },
                 modifier = Modifier.weight(0.3f),
-                label = { Text(Strings.t("screen.employees.text.days.short")) })
+                label = { Text(Strings.t("screen.employees.text.days.short")) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number) // Abre teclado numérico
+            )
             OutlinedTextField(
                 value = month,
-                onValueChange = { if (it.length <= 2) month = it },
+                onValueChange = { newValue ->
+                    val onlyNumbers = newValue.filter { it.isDigit() }
+
+                    if (onlyNumbers.length <= 2) {
+                        if (onlyNumbers.isEmpty()) {
+                            month = "01"
+                        } else {
+                            val monthInt = onlyNumbers.toInt()
+                            // Validamos que no sea mayor a 12
+                            if (monthInt <= 12) {
+                                // Opcional: Evitar que sea "00"
+                                month = onlyNumbers
+                            } else {
+                                month = "12" // Si pone 13, 14... forzamos a 12
+                            }
+                        }
+                    }
+                },
                 modifier = Modifier.weight(0.3f),
-                label = { Text(Strings.t("screen.employees.text.moths.short")) })
+                label = { Text(Strings.t("screen.employees.text.moths.short")) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
             OutlinedTextField(
                 value = year,
-                onValueChange = { if (it.length <= 4) year = it },
+                onValueChange = { newValue ->
+                    val onlyNumbers = newValue.filter { it.isDigit() }
+
+                    if (onlyNumbers.length <= 4) {
+                        year = onlyNumbers
+                    }
+                },
                 modifier = Modifier.weight(0.4f),
-                label = { Text(Strings.t("screen.employees.text.years.short")) })
+                label = { Text(Strings.t("screen.employees.text.years.short")) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
         }
 
         // Al cambiar cualquier valor, notificamos la fecha completa

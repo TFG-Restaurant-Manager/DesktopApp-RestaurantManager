@@ -136,11 +136,8 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 service.addEmployee(employee, password)
-                _employees.update { state ->
-                    if (state is UiState.Success) {
-                        UiState.Success(state.data + employee)
-                    } else state
-                }
+                val result = service.getEmployees()
+                _employees.value = UiState.Success(result)
                 _createState.value = CreateEmployeeState.Success
             } catch (_: UnresolvedAddressException) {
                 println("Error on addEmployee in EmployeesViewModel, direccion ip no existente")

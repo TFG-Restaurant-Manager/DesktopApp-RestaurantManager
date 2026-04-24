@@ -174,7 +174,6 @@ class TablesViewModel(
                     service.updateTable(tables)
                     service.clearCache()
                     val result = service.getTables()
-                    result.forEach { println(it.toString()) }
                     _tables.value = UiState.Success(result)
                     _sections.value = (_tables.value as UiState.Success).data.map { it.section }.distinct()
                 }
