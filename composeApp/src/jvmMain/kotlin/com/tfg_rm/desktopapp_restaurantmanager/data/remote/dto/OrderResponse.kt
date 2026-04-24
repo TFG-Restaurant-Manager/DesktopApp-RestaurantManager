@@ -3,7 +3,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class OrderHistoricalResponse(
+data class OrderResponse(
     val orderId: Int,
     val type: String,
     val status: String,

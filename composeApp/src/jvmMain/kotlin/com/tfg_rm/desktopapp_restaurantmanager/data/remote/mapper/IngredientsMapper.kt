@@ -18,6 +18,19 @@ fun IngredientsDto.toIngredient(): Ingredient {
     )
 }
 
+fun Ingredient.toIngredientsDto(): IngredientsDto {
+    return IngredientsDto(
+        id = this.id,
+        name = this.name,
+        unit = this.unit,
+        stockQuantity = this.stockQuantity,
+        costUnit = this.costUnit,
+        minimumStock = this.minimumStock,
+        category = this.category.name,
+        categoryId = this.category.id,
+    )
+}
+
 fun Ingredient.toIngredientOperationRequest(): IngredientOperationRequest =
     IngredientOperationRequest(
         name = this.name,

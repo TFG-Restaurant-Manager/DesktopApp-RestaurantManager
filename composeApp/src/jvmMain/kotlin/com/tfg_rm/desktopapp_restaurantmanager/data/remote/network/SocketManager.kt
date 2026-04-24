@@ -34,7 +34,7 @@ class SocketManager(
                 when (frame) {
                     is Frame.Text -> {
                         val text = frame.readText()
-                        println("Recibido: $text")
+                        println("Recibido en SocketManager: $text")
                         _messages.emit(text)
                     }
 

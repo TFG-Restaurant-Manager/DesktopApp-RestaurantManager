@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderCreatedResponse
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.FlatEntry
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.nio.channels.UnresolvedAddressException
 import java.time.Duration
 import java.time.LocalDateTime
@@ -58,24 +60,18 @@ class OrdersViewModel(
     }
 
     /** Called by NewOrderScreen to push a finished order into the active list. */
-    // Unused for now, may be used in the near future
-//    fun addOrder(order: Order) {
-//        viewModelScope.launch {
-//            try {
-//                service.addOrder(order)
-//                _orders.update { state ->
-//                    if (state is UiState.Success) {
-//                        UiState.Success(state.data + order)
-//                    } else state
-//                }
-//            } catch (_: UnresolvedAddressException) {
-//                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//                println("Error on addOrder in OrdersViewModel")
-//            }
-//        }
-//    }
+    fun addOrder(order: Order) {
+        viewModelScope.launch {
+            try {
+                service.addOrder(order)
+            } catch (_: UnresolvedAddressException) {
+                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on addOrder in OrdersViewModel")
+            }
+        }
+    }
 
     fun elapsedMinutes(order: Order): Long = try {
         Duration.between(order.createdAt, LocalDateTime.now()).toMinutes()
@@ -125,7 +121,18 @@ class OrdersViewModel(
         viewModelScope.launch {
             try {
                 service.observeMessages().collect { message ->
-                    println("Mensaje recibido en DishesViewModel: $message")
+                    println("Mensaje recibido en OrdersViewModel: $message")
+                    when {
+                        message.contains("ORDER_CREATED") -> {
+                            val result = Json.decodeFromString<OrderCreatedResponse>(message)
+                            println(result.toString())//Falta implementacion tanto del back como de desktop y móvil
+                        }
+
+                        message.contains("STATE_ORDER_UPDATE") -> {
+                            val result = Json.decodeFromString<OrderCreatedResponse>(message)
+                            println(result.toString())//Falta implementacion tanto del back como de desktop y móvil
+                        }
+                    }
                 }
             } catch (_: CancellationException) {
                 service.disconnectWS()

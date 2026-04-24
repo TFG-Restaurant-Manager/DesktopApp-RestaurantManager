@@ -10,16 +10,12 @@ data class DishIngredient(
 )
 
 data class Dishes(
-    // ── Server fields (DB: dishes) ───────────────────────────────────────
     val id: Int,
     val restaurantId: Int = 1,
-    val categoryId: Int? = null,
     val name: String,
     val description: String?,
     val price: Double,
     val available: Boolean,
-    // ── Display helper (resolved from categories table on server) ────────
-    val categoryName: String? = "",
-    // ── Resolved relation (from dish_ingredients join) ───────────────────
+    val category: Category,
     val ingredients: List<DishIngredient> = emptyList()
 )

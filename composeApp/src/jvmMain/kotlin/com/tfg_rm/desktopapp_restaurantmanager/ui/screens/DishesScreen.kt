@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Category
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.DishIngredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
@@ -58,14 +61,14 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
             val dishes = (stateDishes as UiState.Success).data
             val availableIngredients = (stateIngredients as UiState.Success<List<Ingredient>>).data
 
-            var selectedCategory by remember { mutableStateOf(Strings.t("screen.dishes.filter.all")) }
+            var selectedCategory by remember { mutableStateOf(Category(0, Strings.t("screen.dishes.filter.all"))) }
             var showAddDialog by remember { mutableStateOf(false) }
             var editTarget by remember { mutableStateOf<Dishes?>(null) }
             var deleteTarget by remember { mutableStateOf<Dishes?>(null) }
 
-            val categories = dishes.map { it.categoryName }.distinct().sortedBy { it }
-            val displayed = if (selectedCategory == Strings.t("screen.dishes.filter.all")) dishes
-            else dishes.filter { it.categoryName == selectedCategory }
+            val categories = dishes.map { it.category }.distinct().sortedBy { it.name }
+            val displayed = if (selectedCategory.name == Strings.t("screen.dishes.filter.all")) dishes
+            else dishes.filter { it.category.name == selectedCategory.name }
             val availableCount = dishes.count { it.available }
             val unavailableCount = dishes.count { !it.available }
 
@@ -127,8 +130,12 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val allFilter = Strings.t("screen.dishes.filter.all")
-                    item { DishFilterPill(allFilter, selectedCategory == allFilter) { selectedCategory = allFilter } }
+                    val allFilter = Category(0, Strings.t("screen.dishes.filter.all"))
+                    item {
+                        DishFilterPill(allFilter, selectedCategory == allFilter) {
+                            selectedCategory = allFilter
+                        }
+                    }
                     items(categories) { cat ->
                         DishFilterPill(cat!!, selectedCategory == cat) { selectedCategory = cat }
                     }
@@ -221,6 +228,7 @@ fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
                     dish = editTarget,
                     availableIngredients = availableIngredients,
                     onDismiss = { showAddDialog = false; editTarget = null },
+                    categories = categories,
                     onSave = { saved ->
                         if (editTarget != null) viewModel.updateDish(saved) else viewModel.addDish(saved)
                         showAddDialog = false
@@ -282,16 +290,33 @@ private fun DishStatCard(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun DishFilterPill(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun DishFilterPill(label: Category, selected: Boolean, onClick: () -> Unit) {
     val bg = if (selected) dishOrange else Color(0xFFF3F4F6)
     val textColor = if (selected) Color.White else Color(0xFF374151)
-    Box(
-        modifier = Modifier
-            .background(bg, RoundedCornerShape(20.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+
+    Button(
+        onClick = onClick,
+        // Usamos una altura mínima pequeña para que parezca una píldora (Pill)
+        modifier = Modifier.height(32.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = bg,
+            contentColor = textColor
+        ),
+        // Eliminamos la elevación para que se mantenga plano como tu diseño original
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp,
+            hoveredElevation = 1.dp
+        ),
+        // Ajustamos los paddings internos para que coincidan con tu Box
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
     ) {
-        Text(label, color = textColor, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+        Text(
+            text = label.name,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -326,7 +351,7 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall
         )
-        Text(dish.categoryName!!, Modifier.weight(1.5f), style = MaterialTheme.typography.bodySmall)
+        Text(dish.category.name, Modifier.weight(1.5f), style = MaterialTheme.typography.bodySmall)
         Text(
             "%.2f €".format(dish.price),
             Modifier.weight(1f),
@@ -384,15 +409,17 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
 @Composable
 private fun DishFormDialog(
     dish: Dishes?,
+    categories: List<Category>,
     availableIngredients: List<Ingredient>,
     onDismiss: () -> Unit,
     onSave: (Dishes) -> Unit
 ) {
     val isEdit = dish != null
+    var expanded by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf(dish?.name ?: "") }
     var description by remember { mutableStateOf(dish?.description ?: "") }
-    var category by remember { mutableStateOf(dish?.categoryName ?: "") }
+    var category by remember { mutableStateOf(dish?.category ?: Category(0, "---")) }
     var price by remember { mutableStateOf(dish?.price?.toString() ?: "") }
     var available by remember { mutableStateOf(dish?.available ?: true) }
     var dishIngredients by remember { mutableStateOf(dish?.ingredients ?: emptyList()) }
@@ -443,12 +470,44 @@ private fun DishFormDialog(
 
                 // Category + Price in one row
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = category,
-                        onValueChange = { category = it },
-                        label = { Text(Strings.t("screen.dish.form.category")) },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = category.name,
+                            onValueChange = { },
+                            readOnly = true,
+                            label = { Text(Strings.t("screen.dish.form.category")) },
+                            trailingIcon = {
+                                IconButton(onClick = { expanded = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { expanded = true }
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.fillMaxWidth(0.5f)
+                        ) {
+                            categories.forEach { opcion ->
+                                DropdownMenuItem(
+                                    text = { Text(opcion.name) },
+                                    onClick = {
+                                        category = opcion
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                     OutlinedTextField(
                         value = price,
                         onValueChange = { price = it; priceError = "" },
@@ -606,7 +665,7 @@ private fun DishFormDialog(
                                 id = dish?.id ?: 0,
                                 name = name.trim(),
                                 description = description.trim(),
-                                categoryName = category.trim(),
+                                category = category,
                                 price = priceVal!!,
                                 available = available,
                                 ingredients = dishIngredients

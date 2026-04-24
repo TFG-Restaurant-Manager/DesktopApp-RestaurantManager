@@ -3,18 +3,11 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class DishIngredientRequest(
-    val ingredient: IngredientsDto,
-    val quantity: Double
-)
-
-@Serializable
-data class DishCreateRequest(
+data class DishesUpdateRequest(
     val name: String,
-    val description: String,
-    val categoryId: Int,
+    val description: String? = null,
+    val categoryName: String? = null,
     val price: Double,
     val available: Boolean,
-    val restaurantId: Int,
     val ingredients: List<DishIngredientRequest>
 )

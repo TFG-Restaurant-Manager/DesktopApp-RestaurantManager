@@ -1,7 +1,7 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper
 
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderHistoricalResponse
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderItemResponse
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.*
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderHistorical
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem
 import java.time.LocalDateTime
@@ -24,7 +24,22 @@ fun OrderItemResponse.toOrderItem(): OrderItem {
     )
 }
 
-fun OrderHistoricalResponse.toOrderHistorical(): OrderHistorical {
+fun OrderResponse.toOrder(): Order =
+    Order(
+        id = this.orderId,
+        type = this.type,
+        status = this.status,
+        total = this.total,
+        notes = this.notes,
+        createdAt = LocalDateTime.parse(this.createdAt),
+        orderItemsList = this.items.map { it.toOrderItem() } as MutableList<OrderItem>,
+        pickupTime = if (this.pickupTime != null) LocalDateTime.parse(this.pickupTime) else null,
+        deliveryAddress = this.deliveryAddress,
+        clientId = this.clientId,
+        tableId = this.tableId
+    )
+
+fun OrderResponse.toOrderHistorical(): OrderHistorical {
     return OrderHistorical(
         orderId = this.orderId,
         type = this.type,
@@ -39,3 +54,24 @@ fun OrderHistoricalResponse.toOrderHistorical(): OrderHistorical {
         tableId = this.tableId
     )
 }
+
+fun Order.toOrderCreateRequest(): OrderCreateRequest =
+    OrderCreateRequest(
+        payload = this.toOrderRequest()
+    )
+
+fun Order.toOrderRequest(): OrderRequest =
+    OrderRequest(
+        type = this.orderType,
+        tableId = this.tableId?.toLong(),
+        notes = this.notes,
+        deliveryAddress = this.deliveryAddress,
+        deliveryNotes = this.deliveryNotes,
+        items = this.orderItemsList.map { item -> item.toOrderItemRequest() }
+    )
+
+fun OrderItem.toOrderItemRequest(): OrderItemRequest =
+    OrderItemRequest(
+        dishId = this.dishId.toLong(),
+        notes = this.notes
+    )

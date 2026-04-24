@@ -53,6 +53,14 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
             var showCategoryDialog by remember { mutableStateOf(false) }
             var editTarget by remember { mutableStateOf<Ingredient?>(null) }
             var deleteTarget by remember { mutableStateOf<Ingredient?>(null) }
+            var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
+            LaunchedEffect(snackbarMessage) {
+                if (snackbarMessage != null) {
+                    kotlinx.coroutines.delay(2000)
+                    snackbarMessage = null
+                }
+            }
 
             val belowMinimum = ingredients.filter { it.stockQuantity < it.minimumStock }
             val totalValue = ingredients.sumOf { it.stockQuantity * it.costUnit }
@@ -237,18 +245,24 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                     { deleteTarget = it }
                 )
             }
-
             if (showAddDialog) {
-                IngredientFormDialog(
-                    title = Strings.t("screen.ingredient.new_title"),
-                    categories = categories,
-                    initial = null,
-                    onDismiss = { showAddDialog = false },
-                    onConfirm = { ingredient ->
-                        viewModel.addIngredient(ingredient)
-                        showAddDialog = false
-                    }
-                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    IngredientFormDialog(
+                        title = Strings.t("screen.ingredient.new_title"),
+                        categories = categories,
+                        initial = null,
+                        onDismiss = { showAddDialog = false },
+                        onConfirm = { ingredient ->
+                            if (!ingredients.any { it.name == ingredient.name }) {
+                                viewModel.addIngredient(ingredient)
+                                showAddDialog = false
+                            } else {
+                                snackbarMessage = Strings.t("screen.ingredient.form.error.namerepeated")
+                            }
+                        },
+                        snackbarMessage
+                    )
+                }
             }
 
             editTarget?.let { ing ->
@@ -343,7 +357,8 @@ private fun IngredientFormDialog(
     categories: List<Category>,
     initial: Ingredient?,
     onDismiss: () -> Unit,
-    onConfirm: (Ingredient) -> Unit
+    onConfirm: (Ingredient) -> Unit,
+    errorMessage: String? = null
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var category by remember { mutableStateOf(initial?.category ?: categories.first()) }
@@ -359,80 +374,102 @@ private fun IngredientFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextField(
-                    value = name,
-                    onValueChange = { name = it; error = null },
-                    label = { Text(Strings.t("screen.ingredient.form.name")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+            Box(modifier = Modifier.wrapContentSize()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextField(
-                        value = category?.name ?: "",
-                        onValueChange = { },
-                        label = { Text(Strings.t("screen.ingredient.form.category")) },
+                        value = name,
+                        onValueChange = { name = it; error = null },
+                        label = { Text(Strings.t("screen.ingredient.form.name")) },
                         singleLine = true,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Column {
-                        if (showCatPicker) {
-                            categories.forEach { cat ->
-                                TextButton(onClick = {
-                                    category = cat; showCatPicker = false
-                                }) { Text(text = cat.name) }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextField(
+                            value = category?.name ?: "",
+                            onValueChange = { },
+                            label = { Text(Strings.t("screen.ingredient.form.category")) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Column {
+                            if (showCatPicker) {
+                                categories.forEach { cat ->
+                                    TextButton(onClick = {
+                                        category = cat; showCatPicker = false
+                                    }) { Text(text = cat.name) }
+                                }
+                            } else {
+                                OutlinedButton(onClick = { showCatPicker = true }) { Text(text = "▾") }
                             }
-                        } else {
-                            OutlinedButton(onClick = { showCatPicker = true }) { Text(text = "▾") }
                         }
                     }
-                }
-                TextField(
-                    value = unit,
-                    onValueChange = { unit = it; error = null },
-                    label = { Text(Strings.t("screen.ingredient.form.unit")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextField(
-                        value = stock,
-                        onValueChange = { stock = it; error = null },
-                        label = { Text(Strings.t("screen.ingredient.form.stock_current")) },
+                        value = unit,
+                        onValueChange = { unit = it; error = null },
+                        label = { Text(Strings.t("screen.ingredient.form.unit")) },
                         singleLine = true,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextField(
+                            value = stock,
+                            onValueChange = { stock = it; error = null },
+                            label = { Text(Strings.t("screen.ingredient.form.stock_current")) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextField(
+                            value = minStock,
+                            onValueChange = { minStock = it; error = null },
+                            label = { Text(Strings.t("screen.ingredient.form.stock_minimum")) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                     TextField(
-                        value = minStock,
-                        onValueChange = { minStock = it; error = null },
-                        label = { Text(Strings.t("screen.ingredient.form.stock_minimum")) },
+                        value = cost,
+                        onValueChange = { cost = it; error = null },
+                        label = { Text(Strings.t("screen.ingredient.form.price_unit") + " €") },
                         singleLine = true,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Switch(
+                            checked = usableInDishes,
+                            onCheckedChange = { usableInDishes = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Orange)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = Strings.t("screen.ingredient.form.usable_in_dishes"),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    if (error != null) Text(
+                        text = error!!,
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
-                TextField(
-                    value = cost,
-                    onValueChange = { cost = it; error = null },
-                    label = { Text(Strings.t("screen.ingredient.form.price_unit")) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(
-                        checked = usableInDishes,
-                        onCheckedChange = { usableInDishes = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Orange)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = Strings.t("screen.ingredient.form.usable_in_dishes"),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                errorMessage?.let { message ->
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF334155)),
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    ) {
+                        Text(
+                            text = message,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
-                if (error != null) Text(text = error!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
             }
         },
         confirmButton = {

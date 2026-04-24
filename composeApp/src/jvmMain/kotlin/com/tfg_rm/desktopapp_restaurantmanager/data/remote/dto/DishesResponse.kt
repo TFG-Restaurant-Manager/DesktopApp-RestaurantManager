@@ -7,7 +7,9 @@ data class DishesResponse(
     val id: Long,
     val name: String,
     val description: String? = null,
-    val categoryName: String? = null,
+    val categoryId: Int,
+    val categoryName: String,
     val price: Double,
-    val available: Boolean
+    val available: Boolean,
+    val ingredients: List<DishIngredientRequest>
 )

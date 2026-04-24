@@ -23,11 +23,12 @@ class OrdersService(
                 total = first.orderTotal!!,
                 notes = first.orderNotes,
                 createdAt = LocalDateTime.parse(first.orderCreatedAt!!),
-                orderItemsList = first.orderItems!!.toMutableList()
+                orderItemsList = first.orderItems!!.toMutableList(),
+                type = null
             )
         }
 
-    suspend fun addOrder(order: Order): Order = repository.addOrder(order)
+    suspend fun addOrder(order: Order) = repository.addOrder(order)
     suspend fun updateOrder(order: Order) = repository.updateOrder(order)
     fun clearCache() = repositoryDuo.clearCache()
 

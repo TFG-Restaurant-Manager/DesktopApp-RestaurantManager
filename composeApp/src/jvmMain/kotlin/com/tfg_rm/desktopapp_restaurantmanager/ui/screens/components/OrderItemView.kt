@@ -21,7 +21,7 @@ import java.time.LocalDateTime
 @Composable
 fun OrderItemView(
     item: OrderItem,
-    tableId: Int,
+    tableId: Int?,
     orderId: Int,
     displayNumber: Int,
     createdAt: LocalDateTime,

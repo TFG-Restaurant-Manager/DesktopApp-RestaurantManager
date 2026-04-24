@@ -1,8 +1,8 @@
 package com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource
 
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderCreateResponse
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderHistoricalResponse
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderRequest
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderResponse
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -15,11 +15,11 @@ class OrdersRemoteDataSource(
 
     suspend fun getOrders(): List<Order> = listOf()
 
-    suspend fun getOrdersHistorical(): List<OrderHistoricalResponse> = client.get(
+    suspend fun getOrdersHistorical(): List<OrderResponse> = client.get(
         "api/order/paid"
     ).body()
 
-    suspend fun createOrder(request: OrderCreateRequest): OrderCreateResponse {
+    suspend fun createOrder(request: OrderRequest): OrderCreateResponse {
         return client.post("") {
             contentType(ContentType.Application.Json)
             setBody(request)
