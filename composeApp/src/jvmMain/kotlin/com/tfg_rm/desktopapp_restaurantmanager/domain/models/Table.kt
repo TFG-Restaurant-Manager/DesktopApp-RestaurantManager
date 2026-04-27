@@ -17,7 +17,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.models
 data class Table(
     val id: Int?,
     val restaurantId: Int = 1,
-    val name: String = "",
+    val name: String,
     var capacity: Int,
     var posX: Int,
     var posY: Int,

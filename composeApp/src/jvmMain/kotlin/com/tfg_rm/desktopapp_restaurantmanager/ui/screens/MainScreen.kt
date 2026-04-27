@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -105,17 +107,32 @@ private fun NavItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    // Colores calculados según el estado
     val bg = if (selected) selectedBg else Color.Transparent
     val textColor = if (selected) primaryOrange else unselectedText
-    Row(
+
+    TextButton(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .background(bg, shape = RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(start = 16.dp, end = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .height(48.dp), // Altura estándar de navegación
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = bg,
+            contentColor = textColor
+        ),
+        contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
-        Text(text = label, color = textColor, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+            )
+        }
     }
 }

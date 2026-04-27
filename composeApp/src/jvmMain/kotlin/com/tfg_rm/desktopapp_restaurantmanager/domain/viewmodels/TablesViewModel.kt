@@ -67,7 +67,7 @@ class TablesViewModel(
         }
     }
 
-    fun addTable(posX: Int, posY: Int, capacity: Int = 4, seccion: Section) {
+    fun addTable(posX: Int, posY: Int, capacity: Int = 4, name: String, seccion: Section) {
         if ((_tables.value as UiState.Success).data.any { it.posX == posX && it.posY == posY }) return
         viewModelScope.launch {
             try {
@@ -80,8 +80,8 @@ class TablesViewModel(
                     posY = posY,
                     section = seccion,
                     status = "AVAILABLE",
-
-                    )
+                    name = name
+                )
                 val tables = (_tables.value as UiState.Success).data + newTable
                 _tables.update { state ->
                     if (state is UiState.Success) {
@@ -123,7 +123,7 @@ class TablesViewModel(
         }
     }
 
-    fun setCapacity(table: Table, capacity: Int) {
+    fun modifyTable(table: Table, capacity: Int, name: String) {
         if (capacity < 1) return
         viewModelScope.launch {
             try {
@@ -132,7 +132,7 @@ class TablesViewModel(
                         if (state is UiState.Success) {
                             UiState.Success(
                                 state.data.map {
-                                    if (it == table) it.copy(capacity = capacity)
+                                    if (it == table) it.copy(capacity = capacity, name = name)
                                     else it
                                 }
                             )

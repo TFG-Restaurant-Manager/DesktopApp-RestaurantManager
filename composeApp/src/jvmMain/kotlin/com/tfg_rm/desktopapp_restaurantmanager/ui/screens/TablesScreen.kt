@@ -391,26 +391,46 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                         }
 
                         if (tablesModified == true) {
-                            TextButton(
-                                onClick = {
-                                    tablesModified = false
-                                    viewModel.loadTables()
-                                },
-                                modifier = Modifier.fillMaxWidth()
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp) // Espacio entre botones
                             ) {
-                                Text(Strings.t("screen.tables.config.cancel"))
-                            }
-                            Button(
-                                onClick = {
-                                    tablesModified = false
-                                    viewModel.saveData()
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = tableOrange
-                                )
-                            ) {
-                                Text(Strings.t("screen.tables.config.save"))
+                                TextButton(
+                                    onClick = {
+                                        tablesModified = false
+                                        viewModel.loadTables()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.textButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Text(
+                                        text = Strings.t("screen.tables.config.cancel"),
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        tablesModified = false
+                                        viewModel.saveData()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = tableOrange,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text(Strings.t("screen.tables.config.save"))
+                                }
                             }
                         }
                     }
@@ -647,8 +667,9 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                         // Contenido de la mesa (ID y Capacidad)
                                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                             Text(
-                                                                if (table.name.length >= 3) table.name.substring(3)
-                                                                else table.id.toString(),
+                                                                if (table.name.isEmpty()) table.id.toString()
+                                                                else if (table.name.length >= 3) table.name.substring(3)
+                                                                else table.name,
                                                                 fontWeight = FontWeight.Bold,
                                                                 fontSize = 32.sp,
                                                                 color = Color.White
@@ -769,9 +790,9 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                 TableConfigDialog(
                     table = table,
                     onDismiss = { configTarget = null },
-                    onSave = { cap ->
+                    onSave = { cap, name ->
                         tablesModified = true
-                        viewModel.setCapacity(table, cap); configTarget = null
+                        viewModel.modifyTable(table, cap, name); configTarget = null
                     }
                 )
             }
@@ -784,9 +805,9 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                     col = col,
                     row = row,
                     onDismiss = { pendingNewCol = null; pendingNewRow = null },
-                    onSave = { cap ->
+                    onSave = { cap, name ->
                         tablesModified = true
-                        viewModel.addTable(col, row, cap, actualSection)
+                        viewModel.addTable(col, row, cap, name, actualSection)
                         pendingNewCol = null
                         pendingNewRow = null
                     }
@@ -812,9 +833,11 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun TableConfigDialog(table: Table, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+private fun TableConfigDialog(table: Table, onDismiss: () -> Unit, onSave: (Int, String) -> Unit) {
     var capacityText by remember { mutableStateOf(table.capacity.toString()) }
-    var error by remember { mutableStateOf("") }
+    var nameText by remember { mutableStateOf(table.name) }
+    var errorCap by remember { mutableStateOf("") }
+    var errorName by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -825,7 +848,7 @@ private fun TableConfigDialog(table: Table, onDismiss: () -> Unit, onSave: (Int)
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     String.format(Strings.t("screen.tables.config.position"), table.posX, table.posY),
                     style = MaterialTheme.typography.bodySmall,
@@ -833,11 +856,22 @@ private fun TableConfigDialog(table: Table, onDismiss: () -> Unit, onSave: (Int)
                 )
                 OutlinedTextField(
                     value = capacityText,
-                    onValueChange = { capacityText = it; error = "" },
+                    onValueChange = { capacityText = it; errorCap = "" },
                     label = { Text(Strings.t("screen.tables.config.capacity_label")) },
-                    isError = error.isNotEmpty(),
-                    supportingText = if (error.isNotEmpty()) {
-                        { Text(error, color = MaterialTheme.colorScheme.error) }
+                    isError = errorCap.isNotEmpty(),
+                    supportingText = if (errorCap.isNotEmpty()) {
+                        { Text(errorCap, color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it; errorName = "" },
+                    label = { Text(Strings.t("screen.tables.config.table_name")) },
+                    isError = errorName.isNotEmpty(),
+                    supportingText = if (errorName.isNotEmpty()) {
+                        { Text(errorName, color = MaterialTheme.colorScheme.error) }
                     } else null,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -848,10 +882,13 @@ private fun TableConfigDialog(table: Table, onDismiss: () -> Unit, onSave: (Int)
             Button(
                 onClick = {
                     val cap = capacityText.trim().toIntOrNull()
+                    val name = nameText.trim()
                     if (cap == null || cap < 1) {
-                        error = Strings.t("screen.tables.config.error.capacity_invalid")
+                        errorCap = Strings.t("screen.tables.config.error.capacity_invalid")
+                    } else if (name.isEmpty()) {
+                        errorName = Strings.t("screen.tables.config.error.name_invalid")
                     } else {
-                        onSave(cap)
+                        onSave(cap, name)
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = tableOrange)
@@ -868,9 +905,11 @@ private fun TableConfigDialog(table: Table, onDismiss: () -> Unit, onSave: (Int)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun NewTableDialog(col: Int, row: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+private fun NewTableDialog(col: Int, row: Int, onDismiss: () -> Unit, onSave: (Int, String) -> Unit) {
     var capacityText by remember { mutableStateOf("4") }
-    var error by remember { mutableStateOf("") }
+    var nameText by remember { mutableStateOf("") }
+    var errorCap by remember { mutableStateOf("") }
+    var errorName by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -881,26 +920,45 @@ private fun NewTableDialog(col: Int, row: Int, onDismiss: () -> Unit, onSave: (I
             )
         },
         text = {
-            OutlinedTextField(
-                value = capacityText,
-                onValueChange = { capacityText = it; error = "" },
-                label = { Text(Strings.t("screen.tables.config.capacity_label")) },
-                isError = error.isNotEmpty(),
-                supportingText = if (error.isNotEmpty()) {
-                    { Text(error, color = MaterialTheme.colorScheme.error) }
-                } else null,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = capacityText,
+                    onValueChange = { capacityText = it; errorCap = "" },
+                    label = { Text(Strings.t("screen.tables.config.capacity_label")) },
+                    isError = errorCap.isNotEmpty(),
+                    supportingText = if (errorCap.isNotEmpty()) {
+                        { Text(errorCap, color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it; errorName = "" },
+                    label = { Text(Strings.t("screen.tables.config.table_name")) },
+                    isError = errorName.isNotEmpty(),
+                    supportingText = if (errorName.isNotEmpty()) {
+                        { Text(errorName, color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = {
             Button(
                 onClick = {
                     val cap = capacityText.trim().toIntOrNull()
+                    val name = nameText.trim()
                     if (cap == null || cap < 1) {
-                        error = Strings.t("screen.tables.config.error.capacity_invalid")
+                        errorCap = Strings.t("screen.tables.config.error.capacity_invalid")
+                    } else if (name.isEmpty()) {
+                        errorName = Strings.t("screen.tables.config.error.name_invalid")
                     } else {
-                        onSave(cap)
+                        onSave(cap, name)
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = tableOrange)

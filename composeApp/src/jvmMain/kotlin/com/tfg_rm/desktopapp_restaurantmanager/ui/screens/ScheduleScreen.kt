@@ -279,7 +279,6 @@ private fun WeeklyTable(
     weekStart: LocalDate,
     editTarget: (Pair<Employee, DayOfWeek>) -> Unit
 ) {
-    val horizontalScroll = rememberScrollState()
     val verticalScroll = rememberScrollState()
 
     Card(
@@ -288,15 +287,21 @@ private fun WeeklyTable(
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .horizontalScroll(horizontalScroll)
-        ) {
 
-            Column(
-                modifier = Modifier.width(IntrinsicSize.Max)
-            ) {
+        BoxWithConstraints {
+
+            val isWideScreen = maxWidth > 900.dp
+            val horizontalScroll = rememberScrollState()
+
+            val tableModifier = if (isWideScreen) {
+                Modifier.fillMaxWidth()
+            } else {
+                Modifier
+                    .horizontalScroll(horizontalScroll)
+                    .width(900.dp) // ancho mínimo para que no se rompa
+            }
+
+            Column(modifier = tableModifier) {
 
                 // HEADER
                 Row(
@@ -309,7 +314,7 @@ private fun WeeklyTable(
                         text = Strings.t("screen.schedule.employee_column"),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF334155),
-                        modifier = Modifier.width(180.dp)
+                        modifier = Modifier.weight(if (isWideScreen) 1.5f else 1f)
                     )
 
                     DAYS.forEach { day ->
@@ -317,7 +322,7 @@ private fun WeeklyTable(
                             text = dayNames[day] ?: "",
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF334155),
-                            modifier = Modifier.width(140.dp),
+                            modifier = Modifier.weight(1f),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -325,7 +330,7 @@ private fun WeeklyTable(
 
                 HorizontalDivider(color = Color(0xFFE2E8F0))
 
-                // BODY (VERTICAL SCROLL)
+                // BODY
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -344,7 +349,12 @@ private fun WeeklyTable(
                             // EMPLOYEE INFO
                             Column(
                                 modifier = Modifier
-                                    .width(180.dp)
+                                    .then(
+                                        if (isWideScreen)
+                                            Modifier.weight(1.5f)
+                                        else
+                                            Modifier.width(180.dp)
+                                    )
                                     .padding(end = 16.dp)
                             ) {
                                 Text(
@@ -365,65 +375,84 @@ private fun WeeklyTable(
                             DAYS.forEach { day ->
 
                                 val shift = emp.schedules.filter {
-                                    it.startDateTime.toLocalDate().isEqual(weekStart.plusDays((day.value - 1).toLong()))
+                                    it.startDateTime.toLocalDate()
+                                        .isEqual(weekStart.plusDays((day.value - 1).toLong()))
                                 }
 
                                 Box(
                                     modifier = Modifier
-                                        .width(140.dp)
+                                        .then(
+                                            if (isWideScreen)
+                                                Modifier.weight(1f)
+                                            else
+                                                Modifier.width(140.dp)
+                                        )
                                         .padding(horizontal = 8.dp)
                                 ) {
 
-                                    Box(
+                                    Button(
+                                        onClick = { editTarget(Pair(emp, day)) },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(42.dp)
-                                            .background(
-                                                color = if (shift.isNotEmpty())
-                                                    Color(0xFFDCFCE7)
-                                                else
-                                                    Color(0xFFF1F5F9),
-                                                shape = RoundedCornerShape(8.dp)
+                                            .defaultMinSize(minHeight = 42.dp), // Mínimo 42dp, pero crece si hay mucho texto
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            // Color de fondo dinámico
+                                            containerColor = if (shift.isNotEmpty()) Color(0xFFDCFCE7) else Color(
+                                                0xFFF1F5F9
+                                            ),
+                                            // Color del contenido (aunque lo sobreescribimos en el Text)
+                                            contentColor = if (shift.isNotEmpty()) Color(0xFF16A34A) else Color(
+                                                0xFF94A3B8
                                             )
-                                            .clickable {
-                                                editTarget(Pair(emp, day))
-                                            },
-                                        contentAlignment = Alignment.Center
+                                        ),
+                                        // Eliminamos el padding interno excesivo de los botones por defecto
+                                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp),
+                                        // Quitamos la elevación para que quede plano en la tabla
+                                        elevation = ButtonDefaults.buttonElevation(
+                                            defaultElevation = 0.dp,
+                                            pressedElevation = 2.dp,
+                                            hoveredElevation = 1.dp
+                                        )
                                     ) {
-
-                                        if (shift.isNotEmpty()) {
-                                            Column {
-                                                shift.forEach { pair ->
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            if (shift.isNotEmpty()) {
+                                                shift.forEach { s ->
                                                     Text(
-                                                        text = "${
-                                                            pair.startDateTime.format(
-                                                                DateTimeFormatter.ofPattern(
-                                                                    "HH:mm"
-                                                                )
-                                                            )
-                                                        }-${
-                                                            pair.endDateTime.format(
+                                                        text = "${s.startDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))}-${
+                                                            s.endDateTime.format(
                                                                 DateTimeFormatter.ofPattern("HH:mm")
                                                             )
                                                         }",
-                                                        style = MaterialTheme.typography.bodySmall,
+                                                        style = MaterialTheme.typography.bodySmall.copy(
+                                                            fontSize = 13.sp, // Texto más grande
+                                                            lineHeight = 16.sp
+                                                        ),
                                                         fontWeight = FontWeight.Bold,
-                                                        color = Color(0xFF16A34A)
+                                                        color = Color(0xFF16A34A),
+                                                        textAlign = TextAlign.Center
                                                     )
                                                 }
+                                            } else {
+                                                Text(
+                                                    text = Strings.t("screen.schedule.day.rest"),
+                                                    style = MaterialTheme.typography.bodySmall.copy(
+                                                        fontSize = 13.sp // Texto más grande
+                                                    ),
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color(0xFF94A3B8),
+                                                    textAlign = TextAlign.Center
+                                                )
                                             }
-                                        } else {
-                                            Text(
-                                                text = Strings.t("screen.schedule.day.rest"),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Medium,
-                                                color = Color(0xFF94A3B8)
-                                            )
                                         }
                                     }
                                 }
                             }
                         }
+
                         HorizontalDivider(color = Color(0xFFE2E8F0))
                     }
                 }

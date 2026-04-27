@@ -510,7 +510,20 @@ private fun DishFormDialog(
                     }
                     OutlinedTextField(
                         value = price,
-                        onValueChange = { price = it; priceError = "" },
+                        onValueChange = { newValue ->
+                            val sanitizedInput = newValue.replace(',', '.')
+
+                            if (sanitizedInput.isEmpty() || sanitizedInput.matches(Regex("""^\d*\.?\d*$"""))) {
+                                price = sanitizedInput
+
+                                val isDouble = sanitizedInput.toDoubleOrNull() != null
+                                priceError = if (!isDouble && sanitizedInput.isNotEmpty()) {
+                                    "Formato de precio inválido"
+                                } else {
+                                    ""
+                                }
+                            }
+                        },
                         label = { Text(Strings.t("screen.dish.form.price")) },
                         isError = priceError.isNotEmpty(),
                         supportingText = if (priceError.isNotEmpty()) {
@@ -583,7 +596,20 @@ private fun DishFormDialog(
 
                     OutlinedTextField(
                         value = ingredientQuantity,
-                        onValueChange = { ingredientQuantity = it },
+                        onValueChange = { newValue ->
+                            val sanitizedInput = newValue.replace(',', '.')
+
+                            if (sanitizedInput.isEmpty() || sanitizedInput.matches(Regex("""^\d*\.?\d*$"""))) {
+                                ingredientQuantity = sanitizedInput
+
+                                val isDouble = sanitizedInput.toDoubleOrNull() != null
+                                priceError = if (!isDouble && sanitizedInput.isNotEmpty()) {
+                                    "Formato de precio inválido"
+                                } else {
+                                    ""
+                                }
+                            }
+                        },
                         label = { Text(Strings.t("screen.dish.form.quantity")) },
                         modifier = Modifier.weight(1f)
                     )

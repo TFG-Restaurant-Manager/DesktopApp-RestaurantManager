@@ -422,15 +422,20 @@ private fun EditEmployeePasswordDialog(emp: Employee, onDismiss: () -> Unit, onS
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (error.isNotEmpty()) {
-                    Text(error)
+                    Text(
+                        error,
+                        color = Color.Red
+                    )
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                if (password1 == password2) {
-                    onSave(password1, emp)
-                } else error = Strings.t("screen.employees.error.samepassword")
+                if (password1.isNotEmpty()) {
+                    if (password1 == password2) {
+                        onSave(password1, emp)
+                    } else error = Strings.t("screen.employees.error.samepassword")
+                } else error = Strings.t("screen.employees.error.emptypassword")
             }) { Text(text = Strings.t("screen.tables.config.save"), color = Color(0xFF3B82F6)) }
         },
         dismissButton = {
@@ -667,6 +672,22 @@ private fun NewEmployeeDialog(
     val isLoading = createState is CreateEmployeeState.Loading
     val errorMsg = (createState as? CreateEmployeeState.Error)?.msg
 
+    // Estado para controlar si se ha intentado guardar (para mostrar errores)
+    var showErrors by remember { mutableStateOf(false) }
+
+    // Funciones de validación
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-z]{2,}\$".toRegex()
+    val isNameInvalid = name.isBlank()
+    val isEmailInvalid = email.isBlank() || !email.matches(emailRegex)
+    val isPhoneInvalid = phone.isBlank() || phone.length < 9
+    val isCodeInvalid = code.isBlank()
+    val isPasswordInvalid = password.isBlank()
+    val isStartDateInvalid = startDate.isBlank()
+    val isEndDateInvalid = endDate.isBlank()
+
+    val hasErrors = isNameInvalid || isEmailInvalid || isPhoneInvalid ||
+            isCodeInvalid || isPasswordInvalid || isStartDateInvalid || isEndDateInvalid
+
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
         title = { Text(text = Strings.t("screen.employees.buttontext.addemployee"), fontWeight = FontWeight.Bold) },
@@ -677,10 +698,13 @@ private fun NewEmployeeDialog(
                     onValueChange = { name = it },
                     label = { Text(text = Strings.t("screen.ingredient.form.name")) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    isError = showErrors && isNameInvalid,
+                    supportingText = {
+                        if (showErrors && isNameInvalid) Text("El nombre es obligatorio")
+                    }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-z]{2,}\$".toRegex()
 
                 val isEmailError = email.isNotEmpty() && !email.matches(emailRegex)
                 TextField(
@@ -688,7 +712,7 @@ private fun NewEmployeeDialog(
                     onValueChange = { email = it.trim() }, // trim() para evitar espacios accidentales
                     label = { Text(text = Strings.t("screen.employees.atribute.email")) },
                     modifier = Modifier.fillMaxWidth(),
-                    isError = isEmailError, // Se pone rojo si el formato es inválido
+                    isError = showErrors && isEmailError, // Se pone rojo si el formato es inválido
                     supportingText = {
                         if (isEmailError) {
                             Text(
@@ -724,7 +748,7 @@ private fun NewEmployeeDialog(
                         keyboardType = KeyboardType.Phone,
                         imeAction = ImeAction.Next
                     ),
-                    isError = phone.isNotEmpty() && phone.length < 9,
+                    isError = showErrors && (phone.isNotEmpty() && phone.length < 9),
                     supportingText = {
                         if (phone.isNotEmpty() && phone.length < 9) {
                             Text(
@@ -740,7 +764,9 @@ private fun NewEmployeeDialog(
                     onValueChange = { if (it.length <= 10) code = it },
                     label = { Text(text = Strings.t("screen.employees.atribute.code")) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    isError = showErrors && isCodeInvalid,
+                    supportingText = { if (showErrors && isCodeInvalid) Text("El código es obligatorio") }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 TextField(
@@ -749,18 +775,39 @@ private fun NewEmployeeDialog(
                     label = { Text(text = Strings.t("login.password_label")) },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    isError = showErrors && isPasswordInvalid,
+                    supportingText = { if (showErrors && isPasswordInvalid) Text("La contraseña es obligatoria") }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                StableDateSelector(
-                    Strings.t("screen.employees.atribute.startdate"),
-                    { startDate = it }
-                )
+                Column {
+                    StableDateSelector(
+                        Strings.t("screen.employees.atribute.startdate"),
+                        { startDate = it }
+                    )
+                    if (showErrors && isStartDateInvalid) {
+                        Text(
+                            "Fecha de inicio obligatoria",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
-                StableDateSelector(
-                    Strings.t("screen.employees.atribute.enddate"),
-                    { endDate = it }
-                )
+
+                Column {
+                    StableDateSelector(
+                        Strings.t("screen.employees.atribute.enddate"),
+                        { endDate = it }
+                    )
+                    if (showErrors && isEndDateInvalid) {
+                        Text(
+                            "Fecha de fin obligatoria",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 // Active switch
                 Row(
@@ -850,17 +897,19 @@ private fun NewEmployeeDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    try {
-                        val emp = Employee(
-                            id = 0, roleName = role, name = name, email = email,
-                            phone = phone, code = code, startDate = LocalDate.parse(startDate),
-                            endDate = LocalDate.parse(endDate), active = isActive, positionNotes = positionNotes,
-                            schedules = listOf()
-                        )
-                        onSave(emp, password)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        println("Error: ${e.message}")
+                    showErrors = true // Al pulsar, activamos la visualización de errores
+                    if (!hasErrors) {
+                        try {
+                            val emp = Employee(
+                                id = 0, roleName = role, name = name, email = email,
+                                phone = phone, code = code, startDate = LocalDate.parse(startDate),
+                                endDate = LocalDate.parse(endDate), active = isActive,
+                                positionNotes = positionNotes, schedules = listOf()
+                            )
+                            onSave(emp, password)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 },
                 enabled = !isLoading
@@ -918,7 +967,7 @@ fun StableDateSelector(
 
                     if (onlyNumbers.length <= 2) {
                         if (onlyNumbers.isEmpty()) {
-                            day = "01"
+                            day = ""
                         } else {
                             val dayInt = onlyNumbers.toInt()
                             val maxDays = try {
@@ -945,7 +994,7 @@ fun StableDateSelector(
 
                     if (onlyNumbers.length <= 2) {
                         if (onlyNumbers.isEmpty()) {
-                            month = "01"
+                            month = ""
                         } else {
                             val monthInt = onlyNumbers.toInt()
                             // Validamos que no sea mayor a 12
