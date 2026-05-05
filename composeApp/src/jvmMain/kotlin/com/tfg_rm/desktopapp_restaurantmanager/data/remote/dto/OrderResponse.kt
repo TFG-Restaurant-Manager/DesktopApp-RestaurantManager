@@ -13,6 +13,5 @@ data class OrderResponse(
     val items: List<OrderItemResponse>,
     val pickupTime: String?,
     val deliveryAddress: String?,
-    val clientId: Int?,
     val tableId: Int?
 )

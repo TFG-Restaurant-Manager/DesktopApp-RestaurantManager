@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderCreatedResponse
 import com.tfg_rm.desktopapp_restaurantmanager.domain.NewOrderStep
 import com.tfg_rm.desktopapp_restaurantmanager.domain.OrderType
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.*
@@ -13,7 +14,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.nio.channels.UnresolvedAddressException
+import kotlin.coroutines.cancellation.CancellationException
 
 class NewOrderViewModel(
     private val dishesService: DishesService,
@@ -63,6 +66,7 @@ class NewOrderViewModel(
             try {
                 val tables = tablesService.getTables()
                 val dishes = dishesService.getDishes().filter { it.available }
+                observeSocketMessages()
                 _tables.value = UiState.Success(tables)
                 _dishes.value = UiState.Success(dishes)
             } catch (e: UnresolvedAddressException) {
@@ -143,7 +147,8 @@ class NewOrderViewModel(
                         unitPrice = draft.dish.price,
                         notes = fullNotes.ifBlank { null },
                         quantity = draft.quantity,
-                        dishName = draft.dish.name
+                        dishName = draft.dish.name,
+                        status = "CREATED"
                     )
                 }
                 val total = items.sumOf { it.unitPrice * it.quantity }
@@ -161,9 +166,6 @@ class NewOrderViewModel(
                 _step.value = NewOrderStep.SENDED
                 ordersService.addOrder(order)
                 _step.value = NewOrderStep.SENDOK
-                //val saved = ordersService.addOrder(order)
-                //_lastSubmittedOrder.value = saved
-                //onDone(saved)
                 reset()
             } catch (e: UnresolvedAddressException) {
                 println("Error on submitOrder in NewOrderViewModel, direccion ip no existente")
@@ -172,6 +174,44 @@ class NewOrderViewModel(
                 e.printStackTrace()
                 println("Error on submitOrder in NewOrderViewModel")
                 reset()
+            }
+        }
+    }
+
+    private fun observeSocketMessages() {
+        viewModelScope.launch {
+            try {
+                ordersService.observeMessages().collect { message ->
+                    println("Mensaje recibido en OrdersViewModel: $message")
+                    when {
+                        message.contains("ORDER_CREATED") -> {
+                            val result = Json.decodeFromString<OrderCreatedResponse>(message)
+                            println(result.toString())//Falta implementacion tanto del back como de desktop y móvil
+                        }
+
+                        message.contains("STATE_ORDER_UPDATE") -> {
+                            val result = Json.decodeFromString<OrderCreatedResponse>(message)
+                            println(result.toString())//Falta implementacion tanto del back como de desktop y móvil
+                        }
+
+                        message.contains("FAILED_CREATE_ORDER") -> {
+                            println("Error al crear la orden FAILED_CREATE_ORDER")
+                        }
+
+                        message.contains("FAILED_UNHANDLED_TYPE") -> {
+                            println("Error al crear la orden FAILED_UNHANDLED_TYPE")
+                        }
+
+                        message.contains("FAILED_UNHANDLED_MESSAGE") -> {
+                            println("Error al crear la orden FAILED_UNHANDLED_MESSAGE")
+                        }
+                    }
+                }
+            } catch (_: CancellationException) {
+                ordersService.disconnectWS()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println(e.message)
             }
         }
     }

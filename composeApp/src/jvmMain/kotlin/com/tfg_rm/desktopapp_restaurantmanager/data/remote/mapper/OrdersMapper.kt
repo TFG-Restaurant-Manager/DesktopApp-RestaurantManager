@@ -20,7 +20,8 @@ fun OrderItemResponse.toOrderItem(): OrderItem {
         dishId = this.dishId,
         dishName = this.dishName,
         notes = this.itemNotes,
-        unitPrice = this.orderItemPrice
+        unitPrice = this.orderItemPrice,
+        status = this.status
     )
 }
 
@@ -35,7 +36,6 @@ fun OrderResponse.toOrder(): Order =
         orderItemsList = this.items.map { it.toOrderItem() } as MutableList<OrderItem>,
         pickupTime = if (this.pickupTime != null) LocalDateTime.parse(this.pickupTime) else null,
         deliveryAddress = this.deliveryAddress,
-        clientId = this.clientId,
         tableId = this.tableId
     )
 
@@ -50,7 +50,6 @@ fun OrderResponse.toOrderHistorical(): OrderHistorical {
         items = this.items.map { it.toOrderItem() },
         pickupTime = if (this.pickupTime != null) LocalDateTime.parse(this.pickupTime) else null,
         deliveryAddress = this.deliveryAddress,
-        clientId = this.clientId,
         tableId = this.tableId
     )
 }
@@ -60,18 +59,27 @@ fun Order.toOrderCreateRequest(): OrderCreateRequest =
         payload = this.toOrderRequest()
     )
 
+fun Order.toOrderUpdateRequest(): OrderUpdateRequest =
+    OrderUpdateRequest(
+        payload = this.toOrderRequest()
+    )
+
 fun Order.toOrderRequest(): OrderRequest =
     OrderRequest(
+        id = id.toLong(),
         type = this.orderType,
         tableId = this.tableId?.toLong(),
         notes = this.notes,
         deliveryAddress = this.deliveryAddress,
         deliveryNotes = this.deliveryNotes,
+        createdAt = this.createdAt.toString(),
         items = this.orderItemsList.map { item -> item.toOrderItemRequest() }
     )
 
 fun OrderItem.toOrderItemRequest(): OrderItemRequest =
     OrderItemRequest(
+        id = this.id.toLong(),
         dishId = this.dishId.toLong(),
-        notes = this.notes
+        notes = this.notes,
+        status = this.status
     )

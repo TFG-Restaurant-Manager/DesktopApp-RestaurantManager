@@ -13,5 +13,4 @@ val viewModelModule = module {
     viewModelOf(::OrdersViewModel)
     viewModelOf(::TablesViewModel)
     viewModelOf(::NewOrderViewModel)
-    viewModelOf(::OrderHistoryViewModel)
 }

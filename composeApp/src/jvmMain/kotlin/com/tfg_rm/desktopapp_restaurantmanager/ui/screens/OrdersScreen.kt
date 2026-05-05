@@ -25,7 +25,7 @@ import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 
 @Composable
 fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
-    val title by viewModel.title.collectAsState()
+    val title = Strings.t("screen.orders.title")
     val state by viewModel.orders.collectAsState()
 
     when (state) {
@@ -49,6 +49,14 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
 
         is UiState.Success<*> -> {
             val orders = (state as UiState.Success<List<Order>>).data
+                .filter { it.status == "CREATED" }
+                .map { order ->
+                    order.copy(
+                        orderItemsList = order.orderItemsList
+                            .filter { it.status == "CREATED" }
+                            .toMutableList()
+                    )
+                }
 
             Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
                 Text(text = title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)

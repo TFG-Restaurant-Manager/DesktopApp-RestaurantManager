@@ -31,8 +31,6 @@ sealed class SaveScheduleState {
 class EmployeesViewModel(
     val service: EmployeesService
 ) : ViewModel() {
-    private val _title = MutableStateFlow(Strings.t("screen.employees.title"))
-    val title: StateFlow<String> = _title.asStateFlow()
 
     private val _employees = MutableStateFlow<UiState<List<Employee>>>(UiState.Idle)
     val employees: StateFlow<UiState<List<Employee>>> = _employees.asStateFlow()
