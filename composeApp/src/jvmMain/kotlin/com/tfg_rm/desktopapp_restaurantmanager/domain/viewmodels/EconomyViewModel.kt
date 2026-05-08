@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.nio.channels.UnresolvedAddressException
 
 class EconomyViewModel(
     val service: EconomyService
@@ -17,7 +18,14 @@ class EconomyViewModel(
 
     fun loadEconomy() {
         viewModelScope.launch {
-            service.loadInitialData()
+            try {
+                service.loadInitialData()
+            }catch (e: UnresolvedAddressException) {
+                println("Error on loadEconomy in EconomyViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on loadEconomy in EconomyViewModel")
+            }
         }
     }
 

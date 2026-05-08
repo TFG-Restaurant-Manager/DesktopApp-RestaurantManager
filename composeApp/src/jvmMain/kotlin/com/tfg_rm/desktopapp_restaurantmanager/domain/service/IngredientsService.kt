@@ -8,15 +8,9 @@ class IngredientsService(
 ) {
     suspend fun getIngredients(): List<Ingredient> = repository.getIngredients()
 
-    suspend fun getCategories(): List<String> = repository.getCategories()
-
-    suspend fun addIngredient(ingredient: Ingredient): Ingredient = repository.addIngredient(ingredient)
+    suspend fun addIngredient(ingredient: Ingredient) = repository.addIngredient(ingredient)
 
     suspend fun updateIngredient(ingredient: Ingredient) = repository.updateIngredient(ingredient)
 
     suspend fun deleteIngredient(id: Int) = repository.deleteIngredient(id)
-
-    suspend fun addCategory(name: String) = repository.addCategory(name)
-
-    suspend fun deleteCategory(name: String) = repository.deleteCategory(name)
 }
