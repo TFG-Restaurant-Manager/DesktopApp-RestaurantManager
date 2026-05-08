@@ -32,6 +32,7 @@ data class TableOrdersResponse(
     val posY: Double,
     val status: String,
     val sectionTitle: String,
+    val sectionId: Int,
     val orderId: Int?,
     val orderStatus: String?,
     val orderTotal: Double?,

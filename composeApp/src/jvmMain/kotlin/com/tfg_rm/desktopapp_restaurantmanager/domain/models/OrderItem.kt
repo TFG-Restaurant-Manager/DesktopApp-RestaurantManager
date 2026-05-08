@@ -7,6 +7,7 @@ data class OrderItem(
     val dishName: String,
     val unitPrice: Double,
     val notes: String? = null,
+    val status: String,
     // ── Local-only (not in DB — suggested: order_items.quantity) ─────────
     val quantity: Int = 1
 )

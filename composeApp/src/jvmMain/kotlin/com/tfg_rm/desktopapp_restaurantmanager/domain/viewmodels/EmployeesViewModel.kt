@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.EmployeesService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -30,8 +31,6 @@ sealed class SaveScheduleState {
 class EmployeesViewModel(
     val service: EmployeesService
 ) : ViewModel() {
-    private val _title = MutableStateFlow(Strings.t("screen.employees.title"))
-    val title: StateFlow<String> = _title.asStateFlow()
 
     private val _employees = MutableStateFlow<UiState<List<Employee>>>(UiState.Idle)
     val employees: StateFlow<UiState<List<Employee>>> = _employees.asStateFlow()
@@ -42,9 +41,22 @@ class EmployeesViewModel(
     private val _scheduleState = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val scheduleState = _scheduleState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
+
     fun resetState() {
         _employees.value = UiState.Idle
+        _createState.value = CreateEmployeeState.Idle
+        _scheduleState.value = UiState.Idle
     }
+
+    fun loadRole(): String? =
+        service.loadRole()
 
     fun loadEmployees() {
         _employees.value = UiState.Loading
@@ -125,11 +137,8 @@ class EmployeesViewModel(
         viewModelScope.launch {
             try {
                 service.addEmployee(employee, password)
-                _employees.update { state ->
-                    if (state is UiState.Success) {
-                        UiState.Success(state.data + employee)
-                    } else state
-                }
+                val result = service.getEmployees()
+                _employees.value = UiState.Success(result)
                 _createState.value = CreateEmployeeState.Success
             } catch (_: UnresolvedAddressException) {
                 println("Error on addEmployee in EmployeesViewModel, direccion ip no existente")

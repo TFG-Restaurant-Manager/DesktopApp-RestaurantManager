@@ -2,6 +2,8 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Category
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.IngredientsService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -20,12 +22,23 @@ class InventoryViewModel(
     private val _ingredients = MutableStateFlow<UiState<List<Ingredient>>>(UiState.Idle)
     val ingredients: StateFlow<UiState<List<Ingredient>>> = _ingredients.asStateFlow()
 
-    private val _categories = MutableStateFlow<List<String>>(emptyList())
-    val categories: StateFlow<List<String>> = _categories.asStateFlow()
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
 
     fun resetState() {
         _ingredients.value = UiState.Idle
     }
+
+    fun loadRole(): String? =
+        service.loadRole()
 
     fun loadInventory() {
         _ingredients.value = UiState.Loading
@@ -49,10 +62,10 @@ class InventoryViewModel(
     fun addIngredient(ingredient: Ingredient) {
         viewModelScope.launch {
             try {
-                service.addIngredient(ingredient)
+                val newIngredient = service.addIngredient(ingredient)
                 _ingredients.update { state ->
                     if (state is UiState.Success) {
-                        UiState.Success(state.data + ingredient)
+                        UiState.Success(state.data + newIngredient)
                     } else state
                 }
             } catch (_: UnresolvedAddressException) {
@@ -67,6 +80,7 @@ class InventoryViewModel(
     fun updateIngredient(ingredient: Ingredient) {
         viewModelScope.launch {
             try {
+                println("InventoryViewModel update ingredient, ingredient: $ingredient")
                 service.updateIngredient(ingredient)
                 _ingredients.update { state ->
                     if (state is UiState.Success) {

@@ -3,7 +3,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class OrderCreateRequest(
-    val type: String = "CREATE_ORDER",
-    val payload: OrderRequest
+data class OrderStateUpdateResponse(
+    val type: String = "CREATED_ORDER",
+    val payload: OrderResponse
 )

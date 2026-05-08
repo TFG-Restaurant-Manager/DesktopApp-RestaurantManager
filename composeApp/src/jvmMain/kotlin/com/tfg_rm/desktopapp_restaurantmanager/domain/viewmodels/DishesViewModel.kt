@@ -2,6 +2,7 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.DishesService
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.nio.channels.UnresolvedAddressException
+import kotlin.coroutines.cancellation.CancellationException
 
 class DishesViewModel(
     private val service: DishesService
@@ -25,9 +27,20 @@ class DishesViewModel(
     private val _availableIngredients = MutableStateFlow<UiState<List<Ingredient>>>(UiState.Idle)
     val availableIngredients: StateFlow<UiState<List<Ingredient>>> = _availableIngredients.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
+
     fun resetState() {
         _dishes.value = UiState.Idle
     }
+
+    fun loadRole(): String? =
+        service.loadRole()
 
     fun loadDishes() {
         _dishes.value = UiState.Loading
@@ -36,6 +49,7 @@ class DishesViewModel(
             try {
                 val resultDishes = service.getDishes()
                 val resultIngredients = service.getIngredients()
+                observeSocketMessages()
                 _dishes.value = UiState.Success(resultDishes)
                 _availableIngredients.value = UiState.Success(resultIngredients)
             } catch (_: UnresolvedAddressException) {
@@ -107,6 +121,21 @@ class DishesViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error on deleteDish in DishesViewModel")
+            }
+        }
+    }
+
+    private fun observeSocketMessages() {
+        viewModelScope.launch {
+            try {
+                service.observeMessages().collect { message ->
+                    println("Mensaje recibido en DishesViewModel: $message")
+                }
+            } catch (_: CancellationException) {
+                service.disconnectWS()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println(e.message)
             }
         }
     }

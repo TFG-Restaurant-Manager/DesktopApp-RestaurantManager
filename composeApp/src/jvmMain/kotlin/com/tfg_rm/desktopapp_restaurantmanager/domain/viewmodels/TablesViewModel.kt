@@ -2,6 +2,8 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Section
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Table
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.TablesService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
@@ -20,18 +22,34 @@ class TablesViewModel(
     private val _tables = MutableStateFlow<UiState<List<Table>>>(UiState.Idle)
     val tables: StateFlow<UiState<List<Table>>> = _tables.asStateFlow()
 
-    private val _sections = MutableStateFlow<List<String>>(listOf("---"))
-    val sections: StateFlow<List<String>> = _sections
+    private val _sections = MutableStateFlow(listOf(Section(null, "---")))
+    val sections: StateFlow<List<Section>> = _sections
+
+    init {
+        viewModelScope.launch {
+            SessionManager.sessionExpired.collect {
+                resetState()
+            }
+        }
+    }
 
     fun resetState() {
         _tables.value = UiState.Idle
         service.clearCache()
     }
 
-    fun addSection(name: String) {
-        if (name !in _sections.value) {
-            _sections.value += name
+    fun loadRole(): String? =
+        service.loadRole()
+
+    fun addSection(name: String): Section {
+        var section = _sections.value.firstOrNull { it.name == name }
+        if (section == null) {
+            section = Section(null, name)
+            _sections.update {
+                it + section
+            }
         }
+        return section
     }
 
     fun loadTables() {
@@ -52,7 +70,7 @@ class TablesViewModel(
         }
     }
 
-    fun addTable(posX: Int, posY: Int, capacity: Int = 4, seccion: String) {
+    fun addTable(posX: Int, posY: Int, capacity: Int = 4, name: String, seccion: Section) {
         if ((_tables.value as UiState.Success).data.any { it.posX == posX && it.posY == posY }) return
         viewModelScope.launch {
             try {
@@ -64,12 +82,13 @@ class TablesViewModel(
                     posX = posX,
                     posY = posY,
                     section = seccion,
-                    status = "AVAILABLE"
+                    status = "AVAILABLE",
+                    name = name
                 )
-                service.addTable(newTable)
+                val tables = (_tables.value as UiState.Success).data + newTable
                 _tables.update { state ->
                     if (state is UiState.Success) {
-                        UiState.Success(state.data + newTable)
+                        UiState.Success(tables)
                     } else state
                 }
             } catch (_: UnresolvedAddressException) {
@@ -82,21 +101,21 @@ class TablesViewModel(
     }
 
     /** Move a non-default table to a new grid cell. Does nothing if the cell is already taken. */
-    fun moveTable(id: Int, posX: Int, posY: Int, seccion: String) {
+    fun moveTable(table: Table, posX: Int, posY: Int, seccion: Section) {
         if ((_tables.value as UiState.Success).data.any { it.posX == posX && it.posY == posY && it.section == seccion }) return
         viewModelScope.launch {
             try {
-                val table = (_tables.value as UiState.Success).data.firstOrNull { it.id == id } ?: return@launch
-                service.updateTable(table.copy(posX = posX, posY = posY))
-                _tables.update { state ->
-                    if (state is UiState.Success) {
-                        UiState.Success(
-                            state.data.map {
-                                if (it.id == id) it.copy(posX = posX, posY = posY)
-                                else it
-                            }
-                        )
-                    } else state
+                if ((_tables.value as UiState.Success).data.firstOrNull { it == table } != null) {
+                    _tables.update { state ->
+                        if (state is UiState.Success) {
+                            UiState.Success(
+                                state.data.map {
+                                    if (it == table) it.copy(posX = posX, posY = posY)
+                                    else it
+                                }
+                            )
+                        } else state
+                    }
                 }
             } catch (_: UnresolvedAddressException) {
                 println("Error on moveTable in tables view model, direccion ip no existente")
@@ -107,21 +126,21 @@ class TablesViewModel(
         }
     }
 
-    fun setCapacity(id: Int, capacity: Int) {
+    fun modifyTable(table: Table, capacity: Int, name: String) {
         if (capacity < 1) return
         viewModelScope.launch {
             try {
-                val table = (_tables.value as UiState.Success).data.firstOrNull { it.id == id } ?: return@launch
-                service.updateTable(table.copy(capacity = capacity))
-                _tables.update { state ->
-                    if (state is UiState.Success) {
-                        UiState.Success(
-                            state.data.map {
-                                if (it.id == id) it.copy(capacity = capacity)
-                                else it
-                            }
-                        )
-                    } else state
+                if ((_tables.value as UiState.Success).data.firstOrNull { it == table } != null) {
+                    _tables.update { state ->
+                        if (state is UiState.Success) {
+                            UiState.Success(
+                                state.data.map {
+                                    if (it == table) it.copy(capacity = capacity, name = name)
+                                    else it
+                                }
+                            )
+                        } else state
+                    }
                 }
             } catch (_: UnresolvedAddressException) {
                 println("Error on setCapacity in tables view model, direccion ip no existente")
@@ -132,13 +151,12 @@ class TablesViewModel(
         }
     }
 
-    fun removeTable(id: Int) {
+    fun removeTable(table: Table) {
         viewModelScope.launch {
             try {
-                service.deleteTable(id)
                 _tables.update { state ->
                     if (state is UiState.Success) {
-                        UiState.Success(state.data.filter { it.id != id })
+                        UiState.Success(state.data.filter { it != table })
                     } else state
                 }
             } catch (_: UnresolvedAddressException) {
@@ -146,6 +164,27 @@ class TablesViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Error on removeTable in tables view model")
+            }
+        }
+    }
+
+    fun saveData() {
+        viewModelScope.launch {
+            try {
+                val state = _tables.value
+                if (state is UiState.Success) {
+                    val tables = state.data
+                    service.updateTable(tables)
+                    service.clearCache()
+                    val result = service.getTables()
+                    _tables.value = UiState.Success(result)
+                    _sections.value = (_tables.value as UiState.Success).data.map { it.section }.distinct()
+                }
+            } catch (_: UnresolvedAddressException) {
+                println("Error on saveData in tables view model, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on saveData in tables view model")
             }
         }
     }

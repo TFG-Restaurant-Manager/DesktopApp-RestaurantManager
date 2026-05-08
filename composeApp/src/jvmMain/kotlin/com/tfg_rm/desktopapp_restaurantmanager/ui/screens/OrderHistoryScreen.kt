@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderHistorical
-import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrderHistoryViewModel
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrdersViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import java.time.format.DateTimeFormatter
@@ -24,8 +24,8 @@ import java.util.*
 private val headerBg = Color(0xFFF9FAFB)
 
 @Composable
-fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Modifier) {
-    val title by viewModel.title.collectAsState()
+fun OrderHistoryScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
+    val title = Strings.t("screen.orderHistory.title")
     val state by viewModel.orders.collectAsState()
 
     when (state) {
@@ -33,12 +33,12 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
             ErrorScreen(
                 title = Strings.t("screen.orderHistory.error.title"),
                 message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload"), { viewModel.loadOrderHistory() })
+                primaryAction = Pair(Strings.t("reload")) { viewModel.loadOrders() }
             )
         }
 
         UiState.Idle -> {
-            viewModel.loadOrderHistory()
+            viewModel.loadOrders()
         }
 
         UiState.Loading -> {
@@ -47,8 +47,8 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
             )
         }
 
-        is UiState.Success<List<OrderHistorical>> -> {
-            val orders = (state as UiState.Success<List<OrderHistorical>>).data
+        is UiState.Success<List<Order>> -> {
+            val orders = (state as UiState.Success<List<Order>>).data.filter { it.status == "PAID" }
 
             val totalRevenue = orders.sumOf { it.total }
             val today = java.time.LocalDate.now()
@@ -77,7 +77,7 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
                         )
                     }
                     Button(
-                        onClick = { viewModel.loadOrderHistory() },
+                        onClick = { viewModel.loadOrders() },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFFF6A00),
@@ -128,14 +128,14 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "#",
+                                "ID",
                                 Modifier.width(48.dp),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
                             Text(
-                                Strings.t("screen.orderHistory.col.table"),
-                                Modifier.width(80.dp),
+                                Strings.t("screen.orderHistory.col.origin"),
+                                Modifier.width(140.dp),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -148,12 +148,6 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
                             Text(
                                 Strings.t("screen.orderHistory.col.total"),
                                 Modifier.width(90.dp),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                Strings.t("screen.orderHistory.col.status"),
-                                Modifier.width(110.dp),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -192,10 +186,10 @@ fun OrderHistoryScreen(viewModel: OrderHistoryViewModel, modifier: Modifier = Mo
 }
 
 @Composable
-private fun OrderHistoryRow(order: OrderHistorical) {
+private fun OrderHistoryRow(order: Order) {
     val fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("es"))
-    val itemsSummary = if (order.items.isEmpty()) "—"
-    else order.items.joinToString(", ") {
+    val itemsSummary = if (order.orderItemsList.isEmpty()) "—"
+    else order.orderItemsList.joinToString(", ") {
         "${it.dishName} ×${it.quantity}"
     }.let { if (it.length > 60) it.take(57) + "…" else it }
 
@@ -206,7 +200,7 @@ private fun OrderHistoryRow(order: OrderHistorical) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "#${order.orderId}",
+            text = "#${order.id}",
             modifier = Modifier.width(48.dp),
             fontWeight = FontWeight.Medium,
             style = MaterialTheme.typography.bodySmall,
@@ -214,12 +208,21 @@ private fun OrderHistoryRow(order: OrderHistorical) {
         )
         Text(
             text = when (order.type) {
-                "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${order.tableId}"
+                "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${
+                    if (order.tableName != null) {
+                        if (order.tableName.isEmpty()) order.tableId.toString()
+                        else if (order.tableName.length >= 3) order.tableName.substring(
+                            3
+                        )
+                        else order.tableName
+                    } else order.tableId.toString()
+                }"
+
                 "DELIVERY" -> Strings.t("screen.orderHistory.col.delivery")
                 "PICKUP" -> Strings.t("screen.orderHistory.col.pickup")
                 else -> "---"
             },
-            modifier = Modifier.width(80.dp),
+            modifier = Modifier.width(140.dp),
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyMedium
         )
@@ -231,15 +234,12 @@ private fun OrderHistoryRow(order: OrderHistorical) {
             maxLines = 2
         )
         Text(
-            text = "%.2f €".format(order.total),
+            text = "%.2f €".format(order.orderItemsList.sumOf { it.unitPrice * it.quantity }),
             modifier = Modifier.width(90.dp),
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFF0F172A)
         )
-        Box(modifier = Modifier.width(110.dp)) {
-            StatusBadge(order.status)
-        }
         Text(
             text = order.createdAt.format(fmt),
             modifier = Modifier.width(140.dp),

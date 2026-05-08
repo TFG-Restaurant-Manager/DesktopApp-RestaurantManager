@@ -18,11 +18,13 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.models
  */
 data class TablesOrders(
     val tableId: Int,
+    val tableName: String,
     val capacity: Int,
     val posX: Double,
     val posY: Double,
     val status: String,
     val sectionTitle: String,
+    val sectionId: Int,
     val orderId: Int?,
     val orderStatus: String?,
     val orderTotal: Double?,

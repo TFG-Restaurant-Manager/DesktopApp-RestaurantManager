@@ -13,6 +13,7 @@ import kotlinx.serialization.Serializable
  * @property dishName Name of the requested dish.
  * @property orderItemPrice Unit price of the dish recorded at the time the order was placed.
  * @property itemNotes Specific observations for this item (e.g., "No salt", "Rare").
+ * @property status Specific status for this item (e.g., "COOKED", "CREATED").
  */
 @Serializable
 data class OrderItemResponse(
@@ -20,6 +21,7 @@ data class OrderItemResponse(
     val dishId: Int,
     val dishName: String,
     val orderItemPrice: Double,
-    val itemNotes: String?
+    val itemNotes: String?,
+    val status: String
 )
 

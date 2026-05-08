@@ -12,5 +12,4 @@ val serviceModule = module {
     singleOf(::OrdersService)
     singleOf(::TablesService)
     singleOf(::EconomyService)
-    singleOf(::OrderHistoryService)
 }

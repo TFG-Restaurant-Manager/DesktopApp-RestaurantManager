@@ -1,6 +1,7 @@
 package com.tfg_rm.desktopapp_restaurantmanager.ui.navigation
 
 import androidx.compose.runtime.*
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SessionManager
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.AuthState
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.LoginViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.LoginScreen
@@ -27,6 +28,7 @@ fun AppNavigation() {
             is AuthState.LogOut -> {
                 currentScreen = AppScreens.LoginScreen.route
                 loginViewModel.resetState()
+                SessionManager.notifySessionExpired()
             }
 
             else -> {}
@@ -39,9 +41,7 @@ fun AppNavigation() {
         }
 
         AppScreens.MainScreen.route -> {
-            MainScreen(
-                { loginViewModel.logout() }
-            )
+            MainScreen { loginViewModel.logout() }
         }
     }
 }

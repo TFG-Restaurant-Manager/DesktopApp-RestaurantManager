@@ -9,9 +9,7 @@ val viewModelModule = module {
     viewModelOf(::DishesViewModel)
     viewModelOf(::EmployeesViewModel)
     viewModelOf(::InventoryViewModel)
-    viewModelOf(::EconomyViewModel)
     viewModelOf(::OrdersViewModel)
     viewModelOf(::TablesViewModel)
     viewModelOf(::NewOrderViewModel)
-    viewModelOf(::OrderHistoryViewModel)
 }

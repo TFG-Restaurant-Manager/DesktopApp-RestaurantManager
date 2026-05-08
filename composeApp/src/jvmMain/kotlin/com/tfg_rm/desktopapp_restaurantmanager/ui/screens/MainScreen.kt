@@ -4,15 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.*
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -23,26 +24,6 @@ private val unselectedText = Color(0xFF374151)
 @Composable
 fun MainScreen(logOut: () -> Unit) {
     var selected by remember { mutableStateOf("orders") }
-
-    val dishesViewModel: DishesViewModel = koinViewModel()
-    val employeesViewModel: EmployeesViewModel = koinViewModel()
-    val inventoryViewModel: InventoryViewModel = koinViewModel()
-    val economyViewModel: EconomyViewModel = koinViewModel()
-    val ordersViewModel: OrdersViewModel = koinViewModel()
-    val tablesViewModel: TablesViewModel = koinViewModel()
-    val newOrderViewModel: NewOrderViewModel = koinViewModel()
-    val orderHistoryViewModel: OrderHistoryViewModel = koinViewModel()
-
-    val logoutResetVMs = {
-        dishesViewModel.resetState()
-        employeesViewModel.resetState()
-        inventoryViewModel.resetState()
-        //economyViewModel.resetState()
-        ordersViewModel.resetState()
-        tablesViewModel.resetState()
-        //newOrderViewModel.resetState()
-        orderHistoryViewModel.resetState()
-    }
 
     // Color constants matching the design
     val logoutColor = Color(0xFFE53935)
@@ -87,7 +68,6 @@ fun MainScreen(logOut: () -> Unit) {
                     .fillMaxWidth()
                     .clickable {
                         logOut()
-                        logoutResetVMs()
                     }
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -103,19 +83,20 @@ fun MainScreen(logOut: () -> Unit) {
         ) {
             when (selected) {
                 "newOrder" -> NewOrderScreen(
-                    viewModel = newOrderViewModel,
+                    viewModel = koinViewModel(),
+                    ordersViewModel = koinViewModel(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                "orders" -> OrdersScreen(ordersViewModel, Modifier.fillMaxWidth())
-                "tables" -> TablesScreen(tablesViewModel, Modifier.fillMaxWidth())
-                "employees" -> EmployeesScreen(employeesViewModel, Modifier.fillMaxWidth())
-                "schedule" -> ScheduleScreen(employeesViewModel, Modifier.fillMaxWidth())
-                "inventory" -> InventoryScreen(inventoryViewModel, Modifier.fillMaxWidth())
-                "dishes" -> DishesScreen(dishesViewModel, Modifier.fillMaxWidth())
-                "economy" -> EconomyScreen(economyViewModel, Modifier.fillMaxWidth())
-                "orderHistory" -> OrderHistoryScreen(orderHistoryViewModel, Modifier.fillMaxWidth())
-                else -> OrdersScreen(ordersViewModel, Modifier.fillMaxWidth())
+                "orders" -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "tables" -> TablesScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "employees" -> EmployeesScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "schedule" -> ScheduleScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "inventory" -> InventoryScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "dishes" -> DishesScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "economy" -> PaymentScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "orderHistory" -> OrderHistoryScreen(koinViewModel(), Modifier.fillMaxWidth())
+                else -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
             }
         }
     }
@@ -127,17 +108,32 @@ private fun NavItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    // Colores calculados según el estado
     val bg = if (selected) selectedBg else Color.Transparent
     val textColor = if (selected) primaryOrange else unselectedText
-    Row(
+
+    TextButton(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .background(bg, shape = RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(start = 16.dp, end = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .height(48.dp), // Altura estándar de navegación
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = bg,
+            contentColor = textColor
+        ),
+        contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
-        Text(text = label, color = textColor, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+            )
+        }
     }
 }

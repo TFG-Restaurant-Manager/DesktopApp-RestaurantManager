@@ -4,7 +4,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OrderItemRequest(
+    val id: Long,
     val dishId: Long,
     val notes: String? = null,
-    val unitPrice: Double
+    val status: String
 )

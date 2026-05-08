@@ -2,17 +2,16 @@
 
 package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,12 +20,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.DishIngredient
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.DraftItem
 import com.tfg_rm.desktopapp_restaurantmanager.domain.NewOrderStep
-import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.NewOrderViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.domain.OrderType
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.*
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.NewOrderViewModel
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrdersViewModel
+import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
+import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 private val orange = Color(0xFFFF6A00)
 private val orangeLight = Color(0xFFFFF2E6)
@@ -36,57 +42,95 @@ private val grayBorder = Color(0xFFE2E8F0)
 @Composable
 fun NewOrderScreen(
     viewModel: NewOrderViewModel,
+    ordersViewModel: OrdersViewModel,
     modifier: Modifier = Modifier
 ) {
-    val step     by viewModel.step.collectAsState()
-    val drafts   by viewModel.draftItems.collectAsState()
+    val step by viewModel.step.collectAsState()
+    val estadoMesas by viewModel.tables.collectAsState()
+    val estadoPlatos by viewModel.dishes.collectAsState()
+    val estadoOrdenes by ordersViewModel.orders.collectAsState()
 
-    // Top summary bar
-    Column(modifier = modifier.fillMaxSize()) {
-        // ── Header ──────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 28.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    "Nuevo Pedido",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF0F172A)
-                )
-                Text(
-                    when (step) {
-                        NewOrderStep.TYPE    -> "Paso 1 — Tipo y destino"
-                        NewOrderStep.DISHES  -> "Paso 2 — Elige los platos"
-                        NewOrderStep.PAYMENT -> "Paso 3 — Pago"
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFF64748B)
-                )
-            }
-            // Step indicator dots
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                StepDot(1, step.ordinal + 1)
-                Box(Modifier.width(24.dp).height(2.dp).background(grayBorder))
-                StepDot(2, step.ordinal + 1)
-                Box(Modifier.width(24.dp).height(2.dp).background(grayBorder))
-                StepDot(3, step.ordinal + 1)
-            }
+    when {
+        estadoPlatos is UiState.Idle && estadoMesas is UiState.Idle && estadoOrdenes is UiState.Idle -> {
+            ordersViewModel.loadOrders()
+            viewModel.loadData()
         }
 
-        HorizontalDivider()
+        estadoPlatos is UiState.Loading || estadoMesas is UiState.Loading || estadoOrdenes is UiState.Loading -> {
+            LoadingScreen(
+                Strings.t("screen.newOrden.loading.message")
+            )
+        }
 
-        // ── Content area ────────────────────────────────────────────────────
-        when (step) {
-            NewOrderStep.TYPE    -> StepTypeScreen(viewModel)
-            NewOrderStep.DISHES  -> StepDishesScreen(viewModel)
-            NewOrderStep.PAYMENT -> StepPaymentScreen(viewModel)
+        estadoPlatos is UiState.Error || estadoMesas is UiState.Error || estadoOrdenes is UiState.Error -> {
+            ErrorScreen(
+                title = Strings.t("screen.newOrden.error.title"),
+                message = if (estadoPlatos is UiState.Error) (estadoPlatos as UiState.Error).message
+                else (estadoMesas as UiState.Error).message
+            )
+        }
+
+        estadoMesas is UiState.Success && estadoPlatos is UiState.Success && estadoOrdenes is UiState.Success -> {
+            // Top summary bar
+            Column(modifier = modifier.fillMaxSize()) {
+                // ── Header ──────────────────────────────────────────────────────────
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 28.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            Strings.t("screen.newOrden.title"),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            when (step) {
+                                NewOrderStep.TYPE -> "${Strings.t("screen.newOrden.step")} 1 - ${Strings.t("screen.newOrden.step1")}"
+                                NewOrderStep.DISHES -> "${Strings.t("screen.newOrden.step")} 2 - ${Strings.t("screen.newOrden.step2")}"
+                                NewOrderStep.PAYMENT -> "${Strings.t("screen.newOrden.step")} 3 - ${Strings.t("screen.newOrden.step3")}"
+                                NewOrderStep.SENDED -> "${Strings.t("screen.newOrden.step")} 3 - ${Strings.t("screen.newOrden.step3")}"
+                                NewOrderStep.SENDOK -> "${Strings.t("screen.newOrden.step")} 3 - ${Strings.t("screen.newOrden.step3")}"
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                    // Step indicator dots
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StepDot(1, step.ordinal + 1)
+                        Box(Modifier.width(24.dp).height(2.dp).background(grayBorder))
+                        StepDot(2, step.ordinal + 1)
+                        Box(Modifier.width(24.dp).height(2.dp).background(grayBorder))
+                        StepDot(3, step.ordinal + 1)
+                    }
+                }
+
+                HorizontalDivider()
+
+                // ── Content area ────────────────────────────────────────────────────
+                when (step) {
+                    NewOrderStep.TYPE -> StepTypeScreen(
+                        viewModel,
+                        orders = estadoOrdenes
+                    )
+
+                    NewOrderStep.DISHES -> StepDishesScreen(viewModel)
+                    NewOrderStep.PAYMENT -> StepPaymentScreen(viewModel)
+                    NewOrderStep.SENDED -> StepPaymentScreen(viewModel)
+                    NewOrderStep.SENDOK -> StepPaymentScreen(viewModel)
+                }
+            }
         }
     }
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,11 +138,16 @@ fun NewOrderScreen(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun StepTypeScreen(viewModel: NewOrderViewModel) {
-    val orderType      by viewModel.orderType.collectAsState()
+private fun StepTypeScreen(
+    viewModel: NewOrderViewModel,
+    orders: UiState<List<Order>>
+) {
+    val orderType by viewModel.orderType.collectAsState()
     val selectedTableId by viewModel.selectedTableId.collectAsState()
-    val tables         by viewModel.tables.collectAsState()
-    val deliveryAddr   by viewModel.deliveryAddress.collectAsState()
+    val estadoMesas by viewModel.tables.collectAsState()
+    val datePickup by viewModel.datePickup.collectAsState()
+    val deliveryAddr by viewModel.deliveryAddress.collectAsState()
+    var tables = (estadoMesas as UiState.Success).data
 
     Column(
         modifier = Modifier
@@ -108,55 +157,142 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // ── Order type pills ──────────────────────────────────────────────
-        Text("Tipo de pedido", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Color(0xFF0F172A))
+        Text(
+            Strings.t("screen.newOrden.ordertype"),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 17.sp,
+            color = Color(0xFF0F172A)
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OrderType.entries.forEach { type ->
                 val selected = orderType == type
-                Surface(
+
+                Button(
+                    onClick = { viewModel.selectOrderType(type) },
                     shape = RoundedCornerShape(12.dp),
-                    color = if (selected) orange else grayBg,
-                    shadowElevation = if (selected) 4.dp else 1.dp,
-                    modifier = Modifier
-                        .height(52.dp)
-                        .clickable { viewModel.selectOrderType(type) }
+                    modifier = Modifier.height(52.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (selected) orange else grayBg,
+                        contentColor = if (selected) Color.White else Color(0xFF374151)
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = if (selected) 4.dp else 1.dp,
+                        pressedElevation = 8.dp,
+                        hoveredElevation = 6.dp
+                    ),
+                    contentPadding = PaddingValues(horizontal = 24.dp)
                 ) {
-                    Box(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            type.label,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (selected) Color.White else Color(0xFF374151)
-                        )
-                    }
+                    Text(
+                        text = type.label,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
 
         // ── Table map (only for TABLE type) ──────────────────────────────
         if (orderType == OrderType.TABLE) {
-            Text("Selecciona una mesa", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Color(0xFF0F172A))
+            val secciones = remember(tables) { tables.map { it.section }.distinct() }
+            var seccionSeleccionada by remember { mutableStateOf(secciones.firstOrNull()) }
+            var expanded by remember { mutableStateOf(false) }
+
+            tables = tables.filter { it.section == seccionSeleccionada }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween // Separa el texto del selector
+            ) {
+                Text(
+                    text = Strings.t("screen.newOrden.selecttable"),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = Color(0xFF0F172A),
+                    modifier = Modifier.weight(1f) // El texto empuja al selector
+                )
+
+                Box {
+                    Surface(
+                        onClick = { expanded = !expanded },
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 12.dp, vertical = 8.dp), // Padding compacto
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = seccionSeleccionada?.name ?: Strings.t("choose"),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        // El menú se ajusta al contenido de las opciones
+                        modifier = Modifier.widthIn(min = 150.dp)
+                    ) {
+                        secciones.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = option.name,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                onClick = {
+                                    seccionSeleccionada = option
+                                    expanded = false
+                                },
+                                colors = MenuDefaults.itemColors(
+                                    textColor = if (option == seccionSeleccionada)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                    }
+                }
+            }
 
             val maxCol = tables.maxOfOrNull { it.posX } ?: 6
             val maxRow = tables.maxOfOrNull { it.posY } ?: 5
             val cellDp = 100.dp
-            val gapDp  = 12.dp
+            val gapDp = 12.dp
 
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 2.dp,
                 color = Color.White,
-                modifier = Modifier.wrapContentSize()
+                modifier = Modifier
+                    .padding(16.dp)
+                    .wrapContentSize()
             ) {
                 Box(
                     modifier = Modifier
                         .padding(16.dp)
-                        .size(
-                            width  = (cellDp + gapDp) * maxCol - gapDp + 32.dp,
-                            height = (cellDp + gapDp) * maxRow - gapDp + 32.dp
-                        )
                 ) {
+                    Spacer(
+                        modifier = Modifier.size(
+                            width = (cellDp * maxCol) + (gapDp * (maxCol - 1)),
+                            height = (cellDp * maxRow) + (gapDp * (maxRow - 1))
+                        )
+                    )
+
                     // empty cells
                     for (r in 1..maxRow) {
                         for (c in 1..maxCol) {
@@ -175,7 +311,7 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
                     }
                     // tables
                     tables.forEach { table ->
-                        val isSelected = selectedTableId == table.id
+                        val isSelected = selectedTableId == table
                         Box(
                             modifier = Modifier
                                 .offset(
@@ -192,7 +328,7 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
                                     color = if (isSelected) Color(0xFFCC4400) else Color.Transparent,
                                     shape = RoundedCornerShape(10.dp)
                                 )
-                                .clickable { viewModel.selectTable(table.id) },
+                                .clickable { viewModel.selectTable(table) },
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -200,15 +336,19 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    table.id.toString(),
-                                    fontSize   = 26.sp,
+                                    if (table.name.isEmpty()) table.id.toString()
+                                    else if (table.name.length >= 3) table.name.substring(
+                                        3
+                                    )
+                                    else table.name,
+                                    fontSize = 26.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color      = Color.White
+                                    color = Color.White
                                 )
                                 Text(
                                     "👤 ${table.capacity}",
                                     fontSize = 12.sp,
-                                    color    = Color.White.copy(alpha = 0.85f)
+                                    color = Color.White.copy(alpha = 0.85f)
                                 )
                             }
                         }
@@ -218,26 +358,128 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
         }
 
         // ── Delivery address ──────────────────────────────────────────────
-        if (orderType == OrderType.DELIVERY) {
+        else if (orderType == OrderType.DELIVERY) {
             OutlinedTextField(
-                value         = deliveryAddr,
+                value = deliveryAddr,
                 onValueChange = viewModel::setDeliveryAddress,
-                label         = { Text("Dirección de entrega") },
-                modifier      = Modifier.fillMaxWidth(),
-                shape         = RoundedCornerShape(10.dp)
+                label = { Text(Strings.t("screen.newOrden.deliveryaddress")) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp)
             )
+        } else if (orderType == OrderType.PICKUP) {
+            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            var showDatePicker by remember { mutableStateOf(false) }
+            var showTimePicker by remember { mutableStateOf(false) }
+
+            OutlinedTextField(
+                value = datePickup?.format(formatter) ?: "",
+                onValueChange = { },
+                readOnly = true, // Importante: el usuario no escribe, solo clickea
+                label = { Text(Strings.t("screen.newOrden.pickupdate")) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }, // Dispara el proceso
+                enabled = false,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Color.Black,
+                    disabledBorderColor = Color.Gray,
+                    disabledLabelColor = Color.DarkGray,
+                    disabledPlaceholderColor = Color.Gray,
+                ),
+                shape = RoundedCornerShape(10.dp)
+            )
+
+            // --- SELECTOR DE FECHA ---
+            if (showDatePicker) {
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = datePickup
+                        ?.atZone(ZoneId.systemDefault())
+                        ?.toInstant()
+                        ?.toEpochMilli() ?: System.currentTimeMillis()
+                )
+
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val selectedDateMillis = datePickerState.selectedDateMillis
+                            if (selectedDateMillis != null) {
+                                val selectedDate = Instant.ofEpochMilli(selectedDateMillis)
+                                    .atZone(ZoneId.of("UTC"))
+                                    .toLocalDate()
+
+                                val currentHour = datePickup?.toLocalTime() ?: LocalTime.now()
+
+                                val newDateTime = LocalDateTime.of(selectedDate, currentHour)
+                                viewModel.setDatePickup(newDateTime)
+
+                                showDatePicker = false
+                                showTimePicker = true
+                            }
+                        }) { Text(Strings.t("next")) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showDatePicker = false
+                        }) { Text(Strings.t("screen.tables.config.cancel")) }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+
+            // --- SELECTOR DE HORA ---
+            if (showTimePicker) {
+                val timeNow = LocalDateTime.now()
+                val timePickerState = rememberTimePickerState(
+                    initialHour = datePickup?.hour ?: timeNow.hour,
+                    initialMinute = datePickup?.minute ?: timeNow.minute,
+                    is24Hour = true
+                )
+
+                AlertDialog(
+                    onDismissRequest = { showTimePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val finalDateTime = (datePickup ?: LocalDateTime.now())
+                                .withHour(timePickerState.hour)
+                                .withMinute(timePickerState.minute)
+                                .withSecond(0)
+                                .withNano(0)
+
+                            viewModel.setDatePickup(finalDateTime)
+                            showTimePicker = false
+                        }) { Text(Strings.t("accept")) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showTimePicker = false
+                        }) { Text(Strings.t("screen.tables.config.cancel")) }
+                    },
+                    title = { Text(Strings.t("screen.newOrden.selectanhour")) },
+                    text = {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            TimePicker(state = timePickerState)
+                        }
+                    }
+                )
+            }
         }
 
         // ── Next button ───────────────────────────────────────────────────
         val canContinue = orderType != OrderType.TABLE || selectedTableId != null
         Button(
-            onClick  = viewModel::confirmType,
-            enabled  = canContinue,
-            colors   = ButtonDefaults.buttonColors(containerColor = orange),
-            shape    = RoundedCornerShape(10.dp),
+            onClick = { viewModel.confirmType(orders = (orders as UiState.Success).data) },
+            enabled = canContinue,
+            colors = ButtonDefaults.buttonColors(containerColor = orange),
+            shape = RoundedCornerShape(10.dp),
             modifier = Modifier.fillMaxWidth().height(52.dp)
         ) {
-            Text("Continuar → Elegir platos", color = Color.White, fontWeight = FontWeight.SemiBold)
+            Text(
+                "${Strings.t("screen.newOrden.continuedishes")} → ${Strings.t("screen.newOrden.choosedishes")}",
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -248,15 +490,17 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
 
 @Composable
 private fun StepDishesScreen(viewModel: NewOrderViewModel) {
-    val dishes  by viewModel.dishes.collectAsState()
-    val drafts  by viewModel.draftItems.collectAsState()
+    val estadoPlatos by viewModel.dishes.collectAsState()
+    val drafts by viewModel.draftItems.collectAsState()
+    val dishes = (estadoPlatos as UiState.Success).data
 
-    var selectedCategory by remember { mutableStateOf("Todos") }
-    var dishToCustomize  by remember { mutableStateOf<Dishes?>(null) }
+    var selectedCategory by remember { mutableStateOf(Category(0, Strings.t("screen.dishes.filter.all"))) }
+    var dishToCustomize by remember { mutableStateOf<Dishes?>(null) }
 
-    val categories = listOf("Todos") + dishes.map { it.categoryName }.distinct().sortedBy { it }
-    val displayed  = if (selectedCategory == "Todos") dishes
-                     else dishes.filter { it.categoryName == selectedCategory }
+    val categories = listOf(Category(0, Strings.t("screen.dishes.filter.all"))) + dishes.map { it.category }.distinct()
+        .sortedBy { it.name }
+    val displayed = if (selectedCategory.name == Strings.t("screen.dishes.filter.all")) dishes
+    else dishes.filter { it.category == selectedCategory }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // ── Left: catalogue ──────────────────────────────────────────────
@@ -275,10 +519,10 @@ private fun StepDishesScreen(viewModel: NewOrderViewModel) {
                         modifier = Modifier
                             .background(if (sel) orange else grayBg, RoundedCornerShape(20.dp))
                             .border(1.dp, if (sel) orange else grayBorder, RoundedCornerShape(20.dp))
-                            .clickable { selectedCategory = cat!! }
+                            .clickable { selectedCategory = cat }
                             .padding(horizontal = 16.dp, vertical = 6.dp)
                     ) {
-                        Text(cat!!, color = if (sel) Color.White else Color(0xFF374151), fontSize = 13.sp)
+                        Text(cat.name, color = if (sel) Color.White else Color(0xFF374151), fontSize = 13.sp)
                     }
                 }
             }
@@ -301,14 +545,19 @@ private fun StepDishesScreen(viewModel: NewOrderViewModel) {
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Pedido actual", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF0F172A))
+            Text(
+                Strings.t("screen.newOrden.actualorder"),
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Color(0xFF0F172A)
+            )
 
             if (drafts.isEmpty()) {
                 Box(
                     Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Aún no hay platos", color = Color(0xFF94A3B8))
+                    Text(Strings.t("screen.newOrden.emptydishes"), color = Color(0xFF94A3B8))
                 }
             } else {
                 LazyColumn(
@@ -324,23 +573,29 @@ private fun StepDishesScreen(viewModel: NewOrderViewModel) {
             HorizontalDivider()
             val total = drafts.sumOf { it.dish.price * it.quantity }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Total", fontWeight = FontWeight.SemiBold)
+                Text(Strings.t("screen.orderHistory.col.total"), fontWeight = FontWeight.SemiBold)
                 Text("%.2f €".format(total), fontWeight = FontWeight.Bold, color = orange)
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = viewModel::backToType,
-                    shape   = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f).height(48.dp)
-                ) { Text("← Volver") }
+                ) { Text("← ${Strings.t("screen.newOrden.return")}") }
                 Button(
-                    onClick  = viewModel::proceedToPayment,
-                    enabled  = drafts.isNotEmpty(),
-                    colors   = ButtonDefaults.buttonColors(containerColor = orange),
-                    shape    = RoundedCornerShape(10.dp),
+                    onClick = viewModel::proceedToPayment,
+                    enabled = drafts.isNotEmpty(),
+                    colors = ButtonDefaults.buttonColors(containerColor = orange),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f).height(48.dp)
-                ) { Text("Pagar →", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                ) {
+                    Text(
+                        "${Strings.t("send")} →",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
@@ -348,9 +603,9 @@ private fun StepDishesScreen(viewModel: NewOrderViewModel) {
     // ── Dish customisation dialog ────────────────────────────────────────────
     dishToCustomize?.let { dish ->
         DishCustomizeDialog(
-            dish      = dish,
+            dish = dish,
             onDismiss = { dishToCustomize = null },
-            onAdd     = { draft ->
+            onAdd = { draft ->
                 viewModel.addDraftItem(draft)
                 dishToCustomize = null
             }
@@ -381,8 +636,10 @@ private fun DishCatalogueCard(dish: Dishes, onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(dish.name, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
-                Text(dish.description?.take(60) + if ((dish.description?.length ?: 0) > 60) "…" else "",
-                    style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+                Text(
+                    dish.description?.take(60) + if ((dish.description?.length ?: 0) > 60) "…" else "",
+                    style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B)
+                )
             }
             Text("%.2f €".format(dish.price), fontWeight = FontWeight.Bold, color = orange)
         }
@@ -445,7 +702,7 @@ private fun DishCustomizeDialog(
     onDismiss: () -> Unit,
     onAdd: (DraftItem) -> Unit
 ) {
-    var notes     by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
     // ingredient id -> "NORMAL" | "REMOVE" | "EXTRA"
     val mods = remember {
         mutableStateMapOf<Int, String>().also { map ->
@@ -455,13 +712,15 @@ private fun DishCustomizeDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor   = Color.White,
-        shape            = RoundedCornerShape(16.dp),
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp),
         title = {
             Column {
                 Text(dish.name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                Text("%.2f € / unidad".format(dish.price),
-                    style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+                Text(
+                    "%.2f € / ${Strings.t("screen.newOrden.unit")}".format(dish.price),
+                    style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B)
+                )
             }
         },
         text = {
@@ -474,22 +733,22 @@ private fun DishCustomizeDialog(
             ) {
                 // Notes
                 OutlinedTextField(
-                    value         = notes,
+                    value = notes,
                     onValueChange = { notes = it },
-                    label         = { Text("Notas (opcional)") },
-                    modifier      = Modifier.fillMaxWidth(),
-                    shape         = RoundedCornerShape(8.dp),
-                    singleLine    = true
+                    label = { Text(Strings.t("screen.newOrden.notes")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true
                 )
 
                 // Ingredients
                 if (dish.ingredients.isNotEmpty()) {
-                    Text("Ingredientes", fontWeight = FontWeight.SemiBold)
+                    Text(Strings.t("screen.dishes.table.ingredients"), fontWeight = FontWeight.SemiBold)
                     dish.ingredients.forEach { di ->
-                        val id  = di.ingredient.id
+                        val id = di.ingredient.id
                         val mod = mods[id] ?: "NORMAL"
                         IngredientModRow(
-                            di  = di,
+                            di = di,
                             mod = mod,
                             onChange = { mods[id] = it }
                         )
@@ -503,13 +762,13 @@ private fun DishCustomizeDialog(
                     onAdd(DraftItem(dish = dish, quantity = 1, notes = notes, ingredientMods = mods.toMap()))
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = orange),
-                shape  = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Añadir al pedido", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(Strings.t("screen.newOrden.addtoorder"), color = Color.White, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = Color(0xFF64748B)) }
+            TextButton(onClick = onDismiss) { Text(Strings.t("screen.dish.form.cancel"), color = Color(0xFF64748B)) }
         }
     )
 }
@@ -522,31 +781,31 @@ private fun IngredientModRow(
 ) {
     val options = listOf("REMOVE" to "Quitar", "NORMAL" to "Normal", "EXTRA" to "Extra")
     Row(
-        modifier              = Modifier.fillMaxWidth(),
-        verticalAlignment     = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             "${di.ingredient.name}  (${di.quantity} ${di.ingredient.unit})",
             modifier = Modifier.weight(1f),
-            style    = MaterialTheme.typography.bodyMedium,
-            color    = Color(0xFF374151)
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF374151)
         )
         Spacer(Modifier.width(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             options.forEach { (value, label) ->
                 val sel = mod == value
-                val bg  = when {
-                    sel && value == "EXTRA"  -> Color(0xFFDCFCE7)
+                val bg = when {
+                    sel && value == "EXTRA" -> Color(0xFFDCFCE7)
                     sel && value == "REMOVE" -> Color(0xFFFFEBEE)
-                    sel                      -> orangeLight
-                    else                     -> Color(0xFFF1F5F9)
+                    sel -> orangeLight
+                    else -> Color(0xFFF1F5F9)
                 }
                 val textColor = when {
-                    sel && value == "EXTRA"  -> Color(0xFF16A34A)
+                    sel && value == "EXTRA" -> Color(0xFF16A34A)
                     sel && value == "REMOVE" -> Color(0xFFEF4444)
-                    sel                      -> orange
-                    else                     -> Color(0xFF64748B)
+                    sel -> orange
+                    else -> Color(0xFF64748B)
                 }
                 Box(
                     modifier = Modifier
@@ -555,7 +814,12 @@ private fun IngredientModRow(
                         .clickable { onChange(value) }
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(label, color = textColor, fontSize = 12.sp, fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(
+                        label,
+                        color = textColor,
+                        fontSize = 12.sp,
+                        fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal
+                    )
                 }
             }
         }
@@ -568,17 +832,13 @@ private fun IngredientModRow(
 
 @Composable
 private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
-    val drafts       by viewModel.draftItems.collectAsState()
-    val orderType    by viewModel.orderType.collectAsState()
+    val drafts by viewModel.draftItems.collectAsState()
+    val orderType by viewModel.orderType.collectAsState()
     val selectedTable by viewModel.selectedTableId.collectAsState()
 
-    var paymentMethod by remember { mutableStateOf("CARD") } // "CARD" | "CASH"
-    var cashGivenText by remember { mutableStateOf("") }
-    var submitting    by remember { mutableStateOf(false) }
+    var submitting by remember { mutableStateOf(false) }
 
     val subTotal = drafts.sumOf { it.dish.price * it.quantity }
-    val cashGiven = cashGivenText.toDoubleOrNull()
-    val change    = if (paymentMethod == "CASH" && cashGiven != null) cashGiven - subTotal else null
 
     Column(
         modifier = Modifier
@@ -587,17 +847,20 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        val infoMesa = selectedTable?.let { table ->
+            val nombreId = table.name.ifEmpty { table.id }
+            "$nombreId ${table.section.name}"
+        } ?: "—"
         // ── Order summary ─────────────────────────────────────────────────
         Surface(shape = RoundedCornerShape(14.dp), shadowElevation = 2.dp, color = Color.White) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Resumen del pedido", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                Text(Strings.t("screen.newOrden.ordersummary"), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     when (orderType) {
-                        OrderType.TABLE    -> "Mesa ${selectedTable ?: "—"}"
-                        OrderType.TAKEAWAY -> "Para llevar"
-                        OrderType.PICKUP   -> "Recoger en local"
-                        OrderType.DELIVERY -> "A domicilio"
+                        OrderType.TABLE -> "${Strings.t("screen.orderHistory.col.table")} $infoMesa"
+                        OrderType.PICKUP -> Strings.t("screen.newOrden.pickup")
+                        OrderType.DELIVERY -> Strings.t("screen.newOrden.delivery")
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF64748B)
@@ -609,64 +872,21 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("${draft.quantity}× ${draft.dish.name}", style = MaterialTheme.typography.bodyMedium)
-                        Text("%.2f €".format(draft.dish.price * draft.quantity), fontWeight = FontWeight.Medium, color = orange)
+                        Text(
+                            "%.2f €".format(draft.dish.price * draft.quantity),
+                            fontWeight = FontWeight.Medium,
+                            color = orange
+                        )
                     }
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("TOTAL", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(
+                        Strings.t("screen.orderHistory.col.total").uppercase(Locale.getDefault()),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
                     Text("%.2f €".format(subTotal), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = orange)
-                }
-            }
-        }
-
-        // ── Payment method ────────────────────────────────────────────────
-        Text("Método de pago", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Color(0xFF0F172A))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf("CARD" to "💳  Tarjeta", "CASH" to "💵  Efectivo").forEach { (method, label) ->
-                val sel = paymentMethod == method
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (sel) orange else grayBg,
-                    shadowElevation = if (sel) 4.dp else 1.dp,
-                    modifier = Modifier.height(52.dp).clickable { paymentMethod = method }
-                ) {
-                    Box(Modifier.padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
-                        Text(label, fontWeight = FontWeight.SemiBold, color = if (sel) Color.White else Color(0xFF374151))
-                    }
-                }
-            }
-        }
-
-        // ── Cash sub-panel ────────────────────────────────────────────────
-        if (paymentMethod == "CASH") {
-            OutlinedTextField(
-                value         = cashGivenText,
-                onValueChange = { cashGivenText = it },
-                label         = { Text("Importe entregado (€)") },
-                shape         = RoundedCornerShape(10.dp),
-                modifier      = Modifier.width(260.dp)
-            )
-            if (change != null) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (change >= 0) Color(0xFFDCFCE7) else Color(0xFFFFEBEE)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(if (change >= 0) "Cambio:" else "Importe insuficiente:",
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (change >= 0) Color(0xFF16A34A) else Color(0xFFEF4444))
-                        Text(
-                            "%.2f €".format(if (change >= 0) change else -change),
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize   = 20.sp,
-                            color      = if (change >= 0) Color(0xFF16A34A) else Color(0xFFEF4444)
-                        )
-                    }
                 }
             }
         }
@@ -676,30 +896,28 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
         // ── Action buttons ────────────────────────────────────────────────
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(
-                onClick  = viewModel::backToDishes,
-                shape    = RoundedCornerShape(10.dp),
+                onClick = viewModel::backToDishes,
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.height(52.dp)
-            ) { Text("← Volver") }
+            ) { Text("← ${Strings.t("screen.newOrden.return")}") }
 
-            val canPay = paymentMethod == "CARD" || (cashGiven != null && cashGiven >= subTotal)
             Button(
-                onClick  = {
-                    if (submitting) return@Button
-                    submitting = true
-                    viewModel.submitOrder(paymentMethod, cashGiven) { _ ->
-                        submitting = false
+                onClick = {
+                    if (submitting) {
+                        submitting = true
+                        viewModel.submitOrder()
                     }
                 },
-                enabled  = canPay && !submitting,
-                colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
-                shape    = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.height(52.dp).weight(1f)
             ) {
                 Text(
-                    if (submitting) "Enviando…" else "✔  Confirmar pedido",
-                    color      = Color.White,
+                    if (submitting) "${Strings.t("screen.newOrden.paymentmethod.sending")}…"
+                    else "✔  ${Strings.t("screen.newOrden.paymentmethod.confirmorder")}",
+                    color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize   = 16.sp
+                    fontSize = 16.sp
                 )
             }
         }
@@ -713,21 +931,23 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
 @Composable
 private fun StepDot(dotStep: Int, currentStep: Int) {
     val active = dotStep == currentStep
-    val done   = dotStep < currentStep
+    val done = dotStep < currentStep
     Box(
         modifier = Modifier
             .size(if (active) 32.dp else 26.dp)
             .background(
-                color = when { active -> orange; done -> Color(0xFF16A34A); else -> Color(0xFFE2E8F0) },
+                color = when {
+                    active -> orange; done -> Color(0xFF16A34A); else -> Color(0xFFE2E8F0)
+                },
                 shape = RoundedCornerShape(50)
             ),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text  = if (done) "✓" else dotStep.toString(),
+            text = if (done) "✓" else dotStep.toString(),
             color = if (dotStep <= currentStep) Color.White else Color(0xFF94A3B8),
             fontWeight = FontWeight.Bold,
-            fontSize   = 13.sp
+            fontSize = 13.sp
         )
     }
 }

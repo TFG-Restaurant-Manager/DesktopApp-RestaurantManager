@@ -1,33 +1,22 @@
 package com.tfg_rm.desktopapp_restaurantmanager.domain.service
 
 import com.tfg_rm.desktopapp_restaurantmanager.data.repository.OrdersRepository
-import com.tfg_rm.desktopapp_restaurantmanager.data.repository.TablesOrdersRepository
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
-import java.time.LocalDateTime
 
 class OrdersService(
-    private val repository: OrdersRepository,
-    private val repositoryDuo: TablesOrdersRepository
+    private val repository: OrdersRepository
 ) {
-    suspend fun getOrders(): List<Order> = repositoryDuo.getTablesAndOrders()
-        .filter { it.orderId != null }
-        .groupBy { it.orderId }
-        .map { (_, items) ->
+    suspend fun getOrders(): List<Order> = repository.getOrders()
 
-            val first = items.first()
+    fun loadRole(): String? =
+        repository.loadRole()
 
-            Order(
-                id = first.orderId!!,
-                tableId = first.tableId,
-                status = first.orderStatus!!,
-                total = first.orderTotal!!,
-                notes = first.orderNotes,
-                createdAt = LocalDateTime.parse(first.orderCreatedAt!!),
-                orderItemsList = first.orderItems!!.toMutableList()
-            )
-        }
-
-    suspend fun addOrder(order: Order): Order = repository.addOrder(order)
+    suspend fun addOrder(order: Order) = repository.addOrder(order)
     suspend fun updateOrder(order: Order) = repository.updateOrder(order)
-    fun clearCache() = repositoryDuo.clearCache()
+
+    fun observeMessages() = repository.observeMessages()
+
+    suspend fun sendMessage(message: String) = repository.sendMessage(message)
+
+    suspend fun disconnectWS() = repository.disconnectWS()
 }

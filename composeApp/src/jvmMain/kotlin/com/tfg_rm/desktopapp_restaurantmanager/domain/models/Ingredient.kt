@@ -8,7 +8,7 @@ data class Ingredient(
     val stockQuantity: Double,
     val costUnit: Double,
     // ── Local-only fields (not in DB — suggested additions to server) ────
-    val category: String,        // suggest: ingredients.category_id FK
+    val category: Category,
     val minimumStock: Double,    // suggest: ingredients.minimum_stock
     val usableInDishes: Boolean = true  // desktop-only, never sync
 )

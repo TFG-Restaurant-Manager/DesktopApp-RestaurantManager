@@ -12,6 +12,6 @@ data class OrderHistorical(
     val items: List<OrderItem>,
     val pickupTime: LocalDateTime?,
     val deliveryAddress: String?,
-    val clientId: Int?,
-    val tableId: Int?
+    val tableId: Int?,
+    val tableName: String?
 )

@@ -5,13 +5,18 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployee
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployeeRegisterRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toEmployeeUpdateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toScheduleSend
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.TokenProvider
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 
 class EmployeesRepository(
+    private val tokenProvider: TokenProvider,
     private val remote: EmployeesRemoteDataSource
 ) {
 
     suspend fun getEmployees(): List<Employee> = remote.getEmployees().map { it.toEmployee() }
+
+    fun loadRole(): String? =
+        tokenProvider.getRole()
 
     suspend fun updateEmployee(updated: Employee) =
         remote.updateEmployee(updated.id, updated.toEmployeeUpdateRequest())
