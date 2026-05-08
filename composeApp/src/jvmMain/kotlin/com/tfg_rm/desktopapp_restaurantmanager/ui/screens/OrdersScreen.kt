@@ -114,7 +114,9 @@ fun OrdersScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier) {
                         OrderItemView(
                             item = entry.item.copy(quantity = 1),
                             tableId = entry.order.tableId,
+                            tableName = entry.order.tableName,
                             orderId = entry.order.id,
+                            orderType = entry.order.type!!,
                             displayNumber = entry.displayNumber,
                             createdAt = entry.order.createdAt,
                             onComplete = { viewModel.completeOrderItem(entry.order.id, entry.item.id) }

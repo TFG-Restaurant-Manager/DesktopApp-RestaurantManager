@@ -39,6 +39,9 @@ class DishesViewModel(
         _dishes.value = UiState.Idle
     }
 
+    fun loadRole(): String? =
+        service.loadRole()
+
     fun loadDishes() {
         _dishes.value = UiState.Loading
         _availableIngredients.value = UiState.Loading

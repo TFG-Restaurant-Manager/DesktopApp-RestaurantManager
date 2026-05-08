@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.tfg_rm.desktopapp_restaurantmanager.domain.OrderType
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
 import kotlinx.coroutines.delay
@@ -22,7 +23,9 @@ import java.time.LocalDateTime
 fun OrderItemView(
     item: OrderItem,
     tableId: Int?,
+    tableName: String?,
     orderId: Int,
+    orderType: String,
     displayNumber: Int,
     createdAt: LocalDateTime,
     modifier: Modifier = Modifier,
@@ -79,7 +82,18 @@ fun OrderItemView(
             ) {
                 Column {
                     Text(
-                        text = "${Strings.t("screen.orderHistory.col.table")} $tableId",
+                        text = when (orderType) {
+                            OrderType.TABLE.name -> "${Strings.t("screen.orderHistory.col.table")} ${
+                                if (tableName!!.isEmpty()) tableId.toString()
+                                else if (tableName.length >= 3) tableName.substring(
+                                    3
+                                )
+                                else tableName
+                            }"
+
+                            OrderType.PICKUP.name -> Strings.t("screen.orderHistory.col.pickup")
+                            else -> Strings.t("screen.orderHistory.col.delivery")
+                        },
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(

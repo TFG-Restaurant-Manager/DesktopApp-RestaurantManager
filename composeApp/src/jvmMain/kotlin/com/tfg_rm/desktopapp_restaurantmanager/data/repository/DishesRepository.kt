@@ -5,10 +5,12 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toDishCreateRe
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toDishes
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toDishesUpdateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SocketManager
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.TokenProvider
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
 
 class DishesRepository(
     private val remoteDataSource: DishesRemoteDataSource,
+    private val tokenProvider: TokenProvider,
     private val socketManager: SocketManager
 ) {
 
@@ -26,6 +28,9 @@ class DishesRepository(
     suspend fun deleteDish(id: Int) {
         remoteDataSource.deleteDish(id)
     }
+
+    fun loadRole(): String? =
+        tokenProvider.getRole()
 
     fun observeMessages() = socketManager.messages
 

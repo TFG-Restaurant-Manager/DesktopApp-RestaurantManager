@@ -15,6 +15,9 @@ class TablesService(
             it.toTable()
         }
 
+    fun loadRole(): String? =
+        repository.loadRole()
+
     suspend fun updateTable(tables: List<Table>) = repository.updateTables(tables)
 
     fun clearCache() = repositoryDuo.clearCache()

@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -19,19 +18,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tfg_rm.desktopapp_restaurantmanager.domain.NewOrderStep
 import com.tfg_rm.desktopapp_restaurantmanager.domain.OrderType
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Category
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.DishIngredient
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Dishes
-import com.tfg_rm.desktopapp_restaurantmanager.domain.models.DraftItem
+import com.tfg_rm.desktopapp_restaurantmanager.domain.models.*
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.NewOrderViewModel
+import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.OrdersViewModel
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 private val orange = Color(0xFFFF6A00)
@@ -42,24 +42,27 @@ private val grayBorder = Color(0xFFE2E8F0)
 @Composable
 fun NewOrderScreen(
     viewModel: NewOrderViewModel,
+    ordersViewModel: OrdersViewModel,
     modifier: Modifier = Modifier
 ) {
     val step by viewModel.step.collectAsState()
     val estadoMesas by viewModel.tables.collectAsState()
     val estadoPlatos by viewModel.dishes.collectAsState()
+    val estadoOrdenes by ordersViewModel.orders.collectAsState()
 
     when {
-        estadoPlatos is UiState.Idle && estadoMesas is UiState.Idle -> {
+        estadoPlatos is UiState.Idle && estadoMesas is UiState.Idle && estadoOrdenes is UiState.Idle -> {
+            ordersViewModel.loadOrders()
             viewModel.loadData()
         }
 
-        estadoPlatos is UiState.Loading || estadoMesas is UiState.Loading -> {
+        estadoPlatos is UiState.Loading || estadoMesas is UiState.Loading || estadoOrdenes is UiState.Loading -> {
             LoadingScreen(
                 Strings.t("screen.newOrden.loading.message")
             )
         }
 
-        estadoPlatos is UiState.Error || estadoMesas is UiState.Error -> {
+        estadoPlatos is UiState.Error || estadoMesas is UiState.Error || estadoOrdenes is UiState.Error -> {
             ErrorScreen(
                 title = Strings.t("screen.newOrden.error.title"),
                 message = if (estadoPlatos is UiState.Error) (estadoPlatos as UiState.Error).message
@@ -67,7 +70,7 @@ fun NewOrderScreen(
             )
         }
 
-        estadoMesas is UiState.Success && estadoPlatos is UiState.Success -> {
+        estadoMesas is UiState.Success && estadoPlatos is UiState.Success && estadoOrdenes is UiState.Success -> {
             // Top summary bar
             Column(modifier = modifier.fillMaxSize()) {
                 // ── Header ──────────────────────────────────────────────────────────
@@ -114,7 +117,11 @@ fun NewOrderScreen(
 
                 // ── Content area ────────────────────────────────────────────────────
                 when (step) {
-                    NewOrderStep.TYPE -> StepTypeScreen(viewModel)
+                    NewOrderStep.TYPE -> StepTypeScreen(
+                        viewModel,
+                        orders = estadoOrdenes
+                    )
+
                     NewOrderStep.DISHES -> StepDishesScreen(viewModel)
                     NewOrderStep.PAYMENT -> StepPaymentScreen(viewModel)
                     NewOrderStep.SENDED -> StepPaymentScreen(viewModel)
@@ -131,10 +138,14 @@ fun NewOrderScreen(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun StepTypeScreen(viewModel: NewOrderViewModel) {
+private fun StepTypeScreen(
+    viewModel: NewOrderViewModel,
+    orders: UiState<List<Order>>
+) {
     val orderType by viewModel.orderType.collectAsState()
     val selectedTableId by viewModel.selectedTableId.collectAsState()
     val estadoMesas by viewModel.tables.collectAsState()
+    val datePickup by viewModel.datePickup.collectAsState()
     val deliveryAddr by viewModel.deliveryAddress.collectAsState()
     var tables = (estadoMesas as UiState.Success).data
 
@@ -325,7 +336,11 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    table.id.toString(),
+                                    if (table.name.isEmpty()) table.id.toString()
+                                    else if (table.name.length >= 3) table.name.substring(
+                                        3
+                                    )
+                                    else table.name,
                                     fontSize = 26.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -343,7 +358,7 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
         }
 
         // ── Delivery address ──────────────────────────────────────────────
-        if (orderType == OrderType.DELIVERY) {
+        else if (orderType == OrderType.DELIVERY) {
             OutlinedTextField(
                 value = deliveryAddr,
                 onValueChange = viewModel::setDeliveryAddress,
@@ -351,12 +366,110 @@ private fun StepTypeScreen(viewModel: NewOrderViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp)
             )
+        } else if (orderType == OrderType.PICKUP) {
+            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            var showDatePicker by remember { mutableStateOf(false) }
+            var showTimePicker by remember { mutableStateOf(false) }
+
+            OutlinedTextField(
+                value = datePickup?.format(formatter) ?: "",
+                onValueChange = { },
+                readOnly = true, // Importante: el usuario no escribe, solo clickea
+                label = { Text(Strings.t("screen.newOrden.pickupdate")) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }, // Dispara el proceso
+                enabled = false,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Color.Black,
+                    disabledBorderColor = Color.Gray,
+                    disabledLabelColor = Color.DarkGray,
+                    disabledPlaceholderColor = Color.Gray,
+                ),
+                shape = RoundedCornerShape(10.dp)
+            )
+
+            // --- SELECTOR DE FECHA ---
+            if (showDatePicker) {
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = datePickup
+                        ?.atZone(ZoneId.systemDefault())
+                        ?.toInstant()
+                        ?.toEpochMilli() ?: System.currentTimeMillis()
+                )
+
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val selectedDateMillis = datePickerState.selectedDateMillis
+                            if (selectedDateMillis != null) {
+                                val selectedDate = Instant.ofEpochMilli(selectedDateMillis)
+                                    .atZone(ZoneId.of("UTC"))
+                                    .toLocalDate()
+
+                                val currentHour = datePickup?.toLocalTime() ?: LocalTime.now()
+
+                                val newDateTime = LocalDateTime.of(selectedDate, currentHour)
+                                viewModel.setDatePickup(newDateTime)
+
+                                showDatePicker = false
+                                showTimePicker = true
+                            }
+                        }) { Text(Strings.t("next")) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showDatePicker = false
+                        }) { Text(Strings.t("screen.tables.config.cancel")) }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+
+            // --- SELECTOR DE HORA ---
+            if (showTimePicker) {
+                val timeNow = LocalDateTime.now()
+                val timePickerState = rememberTimePickerState(
+                    initialHour = datePickup?.hour ?: timeNow.hour,
+                    initialMinute = datePickup?.minute ?: timeNow.minute,
+                    is24Hour = true
+                )
+
+                AlertDialog(
+                    onDismissRequest = { showTimePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val finalDateTime = (datePickup ?: LocalDateTime.now())
+                                .withHour(timePickerState.hour)
+                                .withMinute(timePickerState.minute)
+                                .withSecond(0)
+                                .withNano(0)
+
+                            viewModel.setDatePickup(finalDateTime)
+                            showTimePicker = false
+                        }) { Text(Strings.t("accept")) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showTimePicker = false
+                        }) { Text(Strings.t("screen.tables.config.cancel")) }
+                    },
+                    title = { Text(Strings.t("screen.newOrden.selectanhour")) },
+                    text = {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            TimePicker(state = timePickerState)
+                        }
+                    }
+                )
+            }
         }
 
         // ── Next button ───────────────────────────────────────────────────
         val canContinue = orderType != OrderType.TABLE || selectedTableId != null
         Button(
-            onClick = viewModel::confirmType,
+            onClick = { viewModel.confirmType(orders = (orders as UiState.Success).data) },
             enabled = canContinue,
             colors = ButtonDefaults.buttonColors(containerColor = orange),
             shape = RoundedCornerShape(10.dp),
@@ -478,7 +591,7 @@ private fun StepDishesScreen(viewModel: NewOrderViewModel) {
                     modifier = Modifier.weight(1f).height(48.dp)
                 ) {
                     Text(
-                        "${Strings.t("screen.newOrden.topay")} →",
+                        "${Strings.t("send")} →",
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -723,13 +836,9 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
     val orderType by viewModel.orderType.collectAsState()
     val selectedTable by viewModel.selectedTableId.collectAsState()
 
-    var paymentMethod by remember { mutableStateOf("CARD") } // "CARD" | "CASH"
-    var cashGivenText by remember { mutableStateOf("") }
     var submitting by remember { mutableStateOf(false) }
 
     val subTotal = drafts.sumOf { it.dish.price * it.quantity }
-    val cashGiven = cashGivenText.toDoubleOrNull()
-    val change = if (paymentMethod == "CASH" && cashGiven != null) cashGiven - subTotal else null
 
     Column(
         modifier = Modifier
@@ -750,8 +859,6 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
                 Text(
                     when (orderType) {
                         OrderType.TABLE -> "${Strings.t("screen.orderHistory.col.table")} $infoMesa"
-
-                        OrderType.TAKEAWAY -> Strings.t("screen.newOrden.takeaway")
                         OrderType.PICKUP -> Strings.t("screen.newOrden.pickup")
                         OrderType.DELIVERY -> Strings.t("screen.newOrden.delivery")
                     },
@@ -784,83 +891,6 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
             }
         }
 
-        // ── Payment method ────────────────────────────────────────────────
-        Text(
-            Strings.t("screen.newOrden.paymentmethod"),
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 17.sp,
-            color = Color(0xFF0F172A)
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf(
-                "CARD" to "💳  ${Strings.t("screen.newOrden.paymentmethod.card")}",
-                "CASH" to "💵  ${Strings.t("screen.newOrden.paymentmethod.cash")}"
-            ).forEach { (method, label) ->
-                val sel = paymentMethod == method
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (sel) orange else grayBg,
-                    shadowElevation = if (sel) 4.dp else 1.dp,
-                    modifier = Modifier.height(52.dp).clickable { paymentMethod = method }
-                ) {
-                    Box(Modifier.padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
-                        Text(
-                            label,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (sel) Color.White else Color(0xFF374151)
-                        )
-                    }
-                }
-            }
-        }
-
-        // ── Cash sub-panel ────────────────────────────────────────────────
-        if (paymentMethod == "CASH") {
-            OutlinedTextField(
-                value = cashGivenText,
-                onValueChange = { newValue ->
-                    val regex = Regex("""^\d{0,7}(\.\d{0,2})?$""")
-
-                    if (newValue.length <= 10 && (newValue.isEmpty() || newValue.matches(regex))) {
-                        cashGivenText = newValue
-                    }
-                },
-                label = { Text("${Strings.t("screen.newOrden.paymentmethod.deliveredamount")} (€)") },
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.width(260.dp),
-                // Forzar el teclado numérico con punto decimal
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
-                    imeAction = ImeAction.Done
-                ),
-                singleLine = true
-            )
-            if (change != null) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (change >= 0) Color(0xFFDCFCE7) else Color(0xFFFFEBEE)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            if (change >= 0) "${Strings.t("screen.newOrden.paymentmethod.change")}:" else "${Strings.t("screen.newOrden.paymentmethod.insufficientamounts")}:",
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (change >= 0) Color(0xFF16A34A) else Color(0xFFEF4444)
-                        )
-                        Text(
-                            "%.2f €".format(if (change >= 0) change else -change),
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 20.sp,
-                            color = if (change >= 0) Color(0xFF16A34A) else Color(0xFFEF4444)
-                        )
-                    }
-                }
-            }
-        }
-
         Spacer(Modifier.weight(1f))
 
         // ── Action buttons ────────────────────────────────────────────────
@@ -871,14 +901,13 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
                 modifier = Modifier.height(52.dp)
             ) { Text("← ${Strings.t("screen.newOrden.return")}") }
 
-            val canPay = paymentMethod == "CARD" || (cashGiven != null && cashGiven >= subTotal)
             Button(
                 onClick = {
-                    if (submitting) return@Button
-                    submitting = true
-                    viewModel.submitOrder()
+                    if (submitting) {
+                        submitting = true
+                        viewModel.submitOrder()
+                    }
                 },
-                enabled = canPay && !submitting,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.height(52.dp).weight(1f)

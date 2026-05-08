@@ -4,14 +4,19 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.remote.datasource.InventoryR
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toIngredient
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toIngredientOperationRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SocketManager
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.TokenProvider
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Ingredient
 
 class IngredientsRepository(
     private val dataSource: InventoryRemoteDataSource,
+    private val tokenProvider: TokenProvider,
     private val socketManager: SocketManager
 ) {
 
     suspend fun getIngredients(): List<Ingredient> = dataSource.getIngredients().map { it.toIngredient() }
+
+    fun loadRole(): String? =
+        tokenProvider.getRole()
 
     suspend fun addIngredient(ingredient: Ingredient): Ingredient {
         return dataSource.createIngredient(ingredient.toIngredientOperationRequest()).toIngredient()

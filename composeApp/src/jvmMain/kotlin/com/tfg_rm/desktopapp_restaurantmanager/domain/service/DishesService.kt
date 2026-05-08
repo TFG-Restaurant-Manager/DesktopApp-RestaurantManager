@@ -10,6 +10,10 @@ class DishesService(
     private val ingredientsRepository: IngredientsRepository
 ) {
     suspend fun getDishes(): List<Dishes> = repository.getDishes()
+
+    fun loadRole(): String? =
+        repository.loadRole()
+
     suspend fun getIngredients(): List<Ingredient> = ingredientsRepository.getIngredients()
         .filter { it.usableInDishes }
 

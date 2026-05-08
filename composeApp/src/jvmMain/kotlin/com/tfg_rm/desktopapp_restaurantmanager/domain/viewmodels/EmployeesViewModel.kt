@@ -55,6 +55,9 @@ class EmployeesViewModel(
         _scheduleState.value = UiState.Idle
     }
 
+    fun loadRole(): String? =
+        service.loadRole()
+
     fun loadEmployees() {
         _employees.value = UiState.Loading
         viewModelScope.launch {

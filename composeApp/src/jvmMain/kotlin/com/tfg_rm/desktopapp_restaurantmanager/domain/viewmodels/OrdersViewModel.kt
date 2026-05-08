@@ -12,6 +12,7 @@ import com.tfg_rm.desktopapp_restaurantmanager.domain.models.OrderItem
 import com.tfg_rm.desktopapp_restaurantmanager.domain.service.OrdersService
 import com.tfg_rm.desktopapp_restaurantmanager.ui.screens.components.UiState
 import com.tfg_rm.desktopapp_restaurantmanager.util.Strings
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,8 +40,12 @@ class OrdersViewModel(
     }
 
     fun resetState() {
+        socketJob?.cancel()
         _orders.value = UiState.Idle
     }
+
+    fun loadRole(): String? =
+        service.loadRole()
 
     fun loadOrders() {
         _orders.value = UiState.Loading
@@ -100,16 +105,32 @@ class OrdersViewModel(
                     } else println("Error, no existe esa orden a completar")
                 }
             } catch (_: UnresolvedAddressException) {
-                println("Error on addOrder in OrdersViewModel, direccion ip no existente")
+                println("Error on completeOrderItem in OrdersViewModel, direccion ip no existente")
             } catch (e: Exception) {
                 e.printStackTrace()
-                println("Error on addOrder in OrdersViewModel")
+                println("Error on completeOrderItem in OrdersViewModel")
             }
         }
     }
 
-    private fun observeSocketMessages() {
+    fun payOrder(order: Order) {
         viewModelScope.launch {
+            try {
+                val orderToSend = order.copy(status = "PAID")
+                service.updateOrder(orderToSend)
+            } catch (_: UnresolvedAddressException) {
+                println("Error on payOrder in OrdersViewModel, direccion ip no existente")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Error on payOrder in OrdersViewModel")
+            }
+        }
+    }
+
+    private var socketJob: Job? = null
+    private fun observeSocketMessages() {
+
+        socketJob = viewModelScope.launch {
             try {
                 service.observeMessages().collect { message ->
                     println("Mensaje recibido en OrdersViewModel: $message")

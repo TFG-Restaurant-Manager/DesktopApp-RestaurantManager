@@ -38,6 +38,9 @@ class TablesViewModel(
         service.clearCache()
     }
 
+    fun loadRole(): String? =
+        service.loadRole()
+
     fun addSection(name: String): Section {
         var section = _sections.value.firstOrNull { it.name == name }
         if (section == null) {

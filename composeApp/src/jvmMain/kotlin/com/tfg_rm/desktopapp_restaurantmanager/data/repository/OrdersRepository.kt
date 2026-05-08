@@ -5,12 +5,14 @@ import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toOrder
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toOrderCreateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.mapper.toOrderUpdateRequest
 import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.SocketManager
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.network.TokenProvider
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Order
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 
 class OrdersRepository(
     private val remote: OrdersRemoteDataSource,
+    private val tokenProvider: TokenProvider,
     private val socketManager: SocketManager
 ) {
 
@@ -22,6 +24,9 @@ class OrdersRepository(
         }
         sendMessage(json.encodeToJsonElement(order.toOrderCreateRequest()).toString())
     }
+
+    fun loadRole(): String? =
+        tokenProvider.getRole()
 
     suspend fun updateOrder(order: Order) {
         val json = Json {

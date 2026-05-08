@@ -37,224 +37,237 @@ private val dishHeaderBg = Color(0xFFF9FAFB)
 fun DishesScreen(viewModel: DishesViewModel, modifier: Modifier = Modifier) {
     val stateDishes by viewModel.dishes.collectAsState()
     val stateIngredients by viewModel.availableIngredients.collectAsState()
+    if (viewModel.loadRole() != "MANAGER") {
+        ErrorScreen(
+            title = Strings.t("screen.tables.error.title"),
+            message = Strings.t("errors.permission")
+        )
+    } else {
+        when (stateDishes) {
+            is UiState.Error -> {
+                ErrorScreen(
+                    title = Strings.t("screen.dish.error.generic"),
+                    message = (stateDishes as UiState.Error).message,
+                    primaryAction = Pair(Strings.t("reload")) { viewModel.loadDishes() }
+                )
+            }
 
-    when (stateDishes) {
-        is UiState.Error -> {
-            ErrorScreen(
-                title = Strings.t("screen.dish.error.generic"),
-                message = (stateDishes as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload")) { viewModel.loadDishes() }
-            )
-        }
+            UiState.Idle -> {
+                if (viewModel.loadRole() == "MANAGER") {
+                    viewModel.loadDishes()
+                } else {
+                    ErrorScreen(
+                        title = Strings.t("screen.dish.error.generic"),
+                        message = Strings.t("errors.permission"),
+                    )
+                }
+            }
 
-        UiState.Idle -> {
-            viewModel.loadDishes()
-        }
+            UiState.Loading -> {
+                LoadingScreen(
+                    text = Strings.t("screen.dish.loading.message")
+                )
+            }
 
-        UiState.Loading -> {
-            LoadingScreen(
-                text = Strings.t("screen.dish.loading.message")
-            )
-        }
+            is UiState.Success<List<Dishes>> -> {
+                val dishes = (stateDishes as UiState.Success).data
+                val availableIngredients = (stateIngredients as UiState.Success<List<Ingredient>>).data
 
-        is UiState.Success<List<Dishes>> -> {
-            val dishes = (stateDishes as UiState.Success).data
-            val availableIngredients = (stateIngredients as UiState.Success<List<Ingredient>>).data
+                var selectedCategory by remember { mutableStateOf(Category(0, Strings.t("screen.dishes.filter.all"))) }
+                var showAddDialog by remember { mutableStateOf(false) }
+                var editTarget by remember { mutableStateOf<Dishes?>(null) }
+                var deleteTarget by remember { mutableStateOf<Dishes?>(null) }
 
-            var selectedCategory by remember { mutableStateOf(Category(0, Strings.t("screen.dishes.filter.all"))) }
-            var showAddDialog by remember { mutableStateOf(false) }
-            var editTarget by remember { mutableStateOf<Dishes?>(null) }
-            var deleteTarget by remember { mutableStateOf<Dishes?>(null) }
+                val categories = dishes.map { it.category }.distinct().sortedBy { it.name }
+                val displayed = if (selectedCategory.name == Strings.t("screen.dishes.filter.all")) dishes
+                else dishes.filter { it.category.name == selectedCategory.name }
+                val availableCount = dishes.count { it.available }
+                val unavailableCount = dishes.count { !it.available }
 
-            val categories = dishes.map { it.category }.distinct().sortedBy { it.name }
-            val displayed = if (selectedCategory.name == Strings.t("screen.dishes.filter.all")) dishes
-            else dishes.filter { it.category.name == selectedCategory.name }
-            val availableCount = dishes.count { it.available }
-            val unavailableCount = dishes.count { !it.available }
+                Column(modifier = modifier) {
 
-            Column(modifier = modifier) {
-
-                // ── Header ──────────────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = Strings.t("screen.dishes.title"),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = Strings.t("screen.dishes.subtitle"),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Button(
-                        onClick = { showAddDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = dishOrange)
+                    // ── Header ──────────────────────────────────────────────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(Strings.t("screen.dishes.add_button"), color = Color.White)
-                    }
-                }
-
-                // ── Stat cards ──────────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    DishStatCard(Modifier.weight(1f), Strings.t("screen.dishes.stat.total"), dishes.size.toString())
-                    DishStatCard(
-                        Modifier.weight(1f),
-                        Strings.t("screen.dishes.stat.available"),
-                        availableCount.toString(),
-                        Color(0xFF2E7D32)
-                    )
-                    DishStatCard(
-                        Modifier.weight(1f),
-                        Strings.t("screen.dishes.stat.unavailable"),
-                        unavailableCount.toString(),
-                        Color(0xFFC62828)
-                    )
-                    DishStatCard(
-                        Modifier.weight(1f),
-                        Strings.t("screen.dishes.stat.categories"),
-                        categories.size.toString()
-                    )
-                }
-
-                // ── Category filter pills ────────────────────────────────────────────
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val allFilter = Category(0, Strings.t("screen.dishes.filter.all"))
-                    item {
-                        DishFilterPill(allFilter, selectedCategory == allFilter) {
-                            selectedCategory = allFilter
+                        Column {
+                            Text(
+                                text = Strings.t("screen.dishes.title"),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = Strings.t("screen.dishes.subtitle"),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    }
-                    items(categories) { cat ->
-                        DishFilterPill(cat!!, selectedCategory == cat) { selectedCategory = cat }
-                    }
-                }
-
-                // ── Table ────────────────────────────────────────────────────────────
-                Surface(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    shadowElevation = 2.dp
-                ) {
-                    Column {
-                        // Header row
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(dishHeaderBg)
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Button(
+                            onClick = { showAddDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = dishOrange)
                         ) {
-                            Text(
-                                Strings.t("screen.dishes.table.name"),
-                                Modifier.weight(2f),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                Strings.t("screen.dishes.table.description"),
-                                Modifier.weight(3f),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                Strings.t("screen.dishes.table.category"),
-                                Modifier.weight(1.5f),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                Strings.t("screen.dishes.table.price"),
-                                Modifier.weight(1f),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                Strings.t("screen.dishes.table.ingredients"),
-                                Modifier.weight(2f),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                Strings.t("screen.dishes.table.status"),
-                                Modifier.weight(1f),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                "",// Hueco para opciones de los platos
-                                Modifier.weight(1.5f)
-                            )
+                            Text(Strings.t("screen.dishes.add_button"), color = Color.White)
                         }
-                        HorizontalDivider()
+                    }
 
-                        if (displayed.isEmpty()) {
-                            Box(Modifier.fillMaxWidth().padding(36.dp), contentAlignment = Alignment.Center) {
+                    // ── Stat cards ──────────────────────────────────────────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        DishStatCard(Modifier.weight(1f), Strings.t("screen.dishes.stat.total"), dishes.size.toString())
+                        DishStatCard(
+                            Modifier.weight(1f),
+                            Strings.t("screen.dishes.stat.available"),
+                            availableCount.toString(),
+                            Color(0xFF2E7D32)
+                        )
+                        DishStatCard(
+                            Modifier.weight(1f),
+                            Strings.t("screen.dishes.stat.unavailable"),
+                            unavailableCount.toString(),
+                            Color(0xFFC62828)
+                        )
+                        DishStatCard(
+                            Modifier.weight(1f),
+                            Strings.t("screen.dishes.stat.categories"),
+                            categories.size.toString()
+                        )
+                    }
+
+                    // ── Category filter pills ────────────────────────────────────────────
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val allFilter = Category(0, Strings.t("screen.dishes.filter.all"))
+                        item {
+                            DishFilterPill(allFilter, selectedCategory == allFilter) {
+                                selectedCategory = allFilter
+                            }
+                        }
+                        items(categories) { cat ->
+                            DishFilterPill(cat!!, selectedCategory == cat) { selectedCategory = cat }
+                        }
+                    }
+
+                    // ── Table ────────────────────────────────────────────────────────────
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        shadowElevation = 2.dp
+                    ) {
+                        Column {
+                            // Header row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(dishHeaderBg)
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    Strings.t("screen.dishes.empty"),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    Strings.t("screen.dishes.table.name"),
+                                    Modifier.weight(2f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Text(
+                                    Strings.t("screen.dishes.table.description"),
+                                    Modifier.weight(3f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Text(
+                                    Strings.t("screen.dishes.table.category"),
+                                    Modifier.weight(1.5f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Text(
+                                    Strings.t("screen.dishes.table.price"),
+                                    Modifier.weight(1f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Text(
+                                    Strings.t("screen.dishes.table.ingredients"),
+                                    Modifier.weight(2f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Text(
+                                    Strings.t("screen.dishes.table.status"),
+                                    Modifier.weight(1f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Text(
+                                    "",// Hueco para opciones de los platos
+                                    Modifier.weight(1.5f)
                                 )
                             }
-                        } else {
-                            LazyColumn {
-                                items(displayed) { dish ->
-                                    DishRow(
-                                        dish = dish,
-                                        onEdit = { editTarget = dish },
-                                        onDelete = { deleteTarget = dish }
+                            HorizontalDivider()
+
+                            if (displayed.isEmpty()) {
+                                Box(Modifier.fillMaxWidth().padding(36.dp), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        Strings.t("screen.dishes.empty"),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                    HorizontalDivider()
+                                }
+                            } else {
+                                LazyColumn {
+                                    items(displayed) { dish ->
+                                        DishRow(
+                                            dish = dish,
+                                            onEdit = { editTarget = dish },
+                                            onDelete = { deleteTarget = dish }
+                                        )
+                                        HorizontalDivider()
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // ── Add / Edit dialog ────────────────────────────────────────────────────
-            if (showAddDialog || editTarget != null) {
-                DishFormDialog(
-                    dish = editTarget,
-                    availableIngredients = availableIngredients,
-                    onDismiss = { showAddDialog = false; editTarget = null },
-                    categories = categories,
-                    onSave = { saved ->
-                        if (editTarget != null) viewModel.updateDish(saved) else viewModel.addDish(saved)
-                        showAddDialog = false
-                        editTarget = null
-                    }
-                )
-            }
-
-            // ── Delete confirmation ──────────────────────────────────────────────────
-            deleteTarget?.let { dish ->
-                AlertDialog(
-                    onDismissRequest = { deleteTarget = null },
-                    title = { Text(Strings.t("screen.dish.delete_title")) },
-                    text = { Text(String.format(Strings.t("screen.dish.delete_confirm"), dish.name)) },
-                    confirmButton = {
-                        Button(
-                            onClick = { viewModel.deleteDish(dish.id); deleteTarget = null },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                        ) { Text("OK", color = Color.White) }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { deleteTarget = null }) {
-                            Text(Strings.t("screen.dish.form.cancel"))
+                // ── Add / Edit dialog ────────────────────────────────────────────────────
+                if (showAddDialog || editTarget != null) {
+                    DishFormDialog(
+                        dish = editTarget,
+                        availableIngredients = availableIngredients,
+                        onDismiss = { showAddDialog = false; editTarget = null },
+                        categories = categories,
+                        onSave = { saved ->
+                            if (editTarget != null) viewModel.updateDish(saved) else viewModel.addDish(saved)
+                            showAddDialog = false
+                            editTarget = null
                         }
-                    }
-                )
+                    )
+                }
+
+                // ── Delete confirmation ──────────────────────────────────────────────────
+                deleteTarget?.let { dish ->
+                    AlertDialog(
+                        onDismissRequest = { deleteTarget = null },
+                        title = { Text(Strings.t("screen.dish.delete_title")) },
+                        text = { Text(String.format(Strings.t("screen.dish.delete_confirm"), dish.name)) },
+                        confirmButton = {
+                            Button(
+                                onClick = { viewModel.deleteDish(dish.id); deleteTarget = null },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                            ) { Text("OK", color = Color.White) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { deleteTarget = null }) {
+                                Text(Strings.t("screen.dish.form.cancel"))
+                            }
+                        }
+                    )
+                }
             }
         }
     }

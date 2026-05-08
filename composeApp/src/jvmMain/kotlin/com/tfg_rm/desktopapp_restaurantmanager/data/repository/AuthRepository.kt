@@ -12,7 +12,8 @@ class AuthRepository(
     suspend fun requestToken(code: String, password: String) {
         val response = remote.requestToken(code = code, password = password)
         val token = response.token
-        tokenProvider.setToken(token)
+        val role = response.role
+        tokenProvider.setToken(token, role)
     }
 
     suspend fun logout() {

@@ -8,6 +8,9 @@ class EmployeesService(
 ) {
     suspend fun getEmployees(): List<Employee> = repository.getEmployees()
 
+    fun loadRole(): String? =
+        repository.loadRole()
+
     suspend fun updateEmployee(employee: Employee) = repository.updateEmployee(employee)
 
     suspend fun updatePassword(employee: Employee, password: String) =

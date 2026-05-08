@@ -25,284 +25,306 @@ private val Orange = Color(0xFFF97316)
 fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.ingredients.collectAsState()
 
-    when (state) {
-        is UiState.Idle -> {
-            viewModel.loadInventory()
-        }
-
-        is UiState.Error -> {
-            ErrorScreen(
-                title = Strings.t("screen.ingredient.error.generic"),
-                message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload")) { viewModel.loadInventory() }
-            )
-        }
-
-        UiState.Loading -> {
-            LoadingScreen(
-                Strings.t("screen.ingredient.loading.message")
-            )
-        }
-
-        is UiState.Success<List<Ingredient>> -> {
-            val ingredients = (state as UiState.Success<List<Ingredient>>).data
-            val categories by viewModel.categories.collectAsState()
-
-            var selectedCategory by remember { mutableStateOf(Category(-1, Strings.t("screen.inventory.filter.all"))) }
-            var showAddDialog by remember { mutableStateOf(false) }
-            var showCategoryDialog by remember { mutableStateOf(false) }
-            var editTarget by remember { mutableStateOf<Ingredient?>(null) }
-            var deleteTarget by remember { mutableStateOf<Ingredient?>(null) }
-            var snackbarMessage by remember { mutableStateOf<String?>(null) }
-
-            LaunchedEffect(snackbarMessage) {
-                if (snackbarMessage != null) {
-                    kotlinx.coroutines.delay(2000)
-                    snackbarMessage = null
+    if (viewModel.loadRole() != "MANAGER") {
+        ErrorScreen(
+            title = Strings.t("screen.tables.error.title"),
+            message = Strings.t("errors.permission")
+        )
+    } else {
+        when (state) {
+            is UiState.Idle -> {
+                if (viewModel.loadRole() == "MANAGER") {
+                    viewModel.loadInventory()
+                } else {
+                    ErrorScreen(
+                        title = Strings.t("screen.ingredient.error.generic"),
+                        message = Strings.t("errors.permission"),
+                    )
                 }
             }
 
-            val belowMinimum = ingredients.filter { it.stockQuantity < it.minimumStock }
-            val totalValue = ingredients.sumOf { it.stockQuantity * it.costUnit }
-            val displayed = if (selectedCategory.name == Strings.t("screen.inventory.filter.all")) ingredients
-            else ingredients.filter { it.category == selectedCategory }
+            is UiState.Error -> {
+                ErrorScreen(
+                    title = Strings.t("screen.ingredient.error.generic"),
+                    message = (state as UiState.Error).message,
+                    primaryAction = Pair(Strings.t("reload")) { viewModel.loadInventory() }
+                )
+            }
 
-            Column(
-                modifier = modifier.fillMaxSize()
-                    .padding(horizontal = 32.dp, vertical = 24.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+            UiState.Loading -> {
+                LoadingScreen(
+                    Strings.t("screen.ingredient.loading.message")
+                )
+            }
 
-                // ── Header ──────────────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            is UiState.Success<List<Ingredient>> -> {
+                val ingredients = (state as UiState.Success<List<Ingredient>>).data
+                val categories by viewModel.categories.collectAsState()
+
+                var selectedCategory by remember {
+                    mutableStateOf(
+                        Category(
+                            -1,
+                            Strings.t("screen.inventory.filter.all")
+                        )
+                    )
+                }
+                var showAddDialog by remember { mutableStateOf(false) }
+                var showCategoryDialog by remember { mutableStateOf(false) }
+                var editTarget by remember { mutableStateOf<Ingredient?>(null) }
+                var deleteTarget by remember { mutableStateOf<Ingredient?>(null) }
+                var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(snackbarMessage) {
+                    if (snackbarMessage != null) {
+                        kotlinx.coroutines.delay(2000)
+                        snackbarMessage = null
+                    }
+                }
+
+                val belowMinimum = ingredients.filter { it.stockQuantity < it.minimumStock }
+                val totalValue = ingredients.sumOf { it.stockQuantity * it.costUnit }
+                val displayed = if (selectedCategory.name == Strings.t("screen.inventory.filter.all")) ingredients
+                else ingredients.filter { it.category == selectedCategory }
+
+                Column(
+                    modifier = modifier.fillMaxSize()
+                        .padding(horizontal = 32.dp, vertical = 24.dp)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Column {
-                        Text(
-                            text = Strings.t("screen.inventory.title"),
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF0F172A)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = Strings.t("screen.inventory.subtitle"),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFF64748B)
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        OutlinedButton(
-                            onClick = { showCategoryDialog = true },
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155)),
-                            modifier = Modifier.height(48.dp)
-                        ) {
+
+                    // ── Header ──────────────────────────────────────────────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
                             Text(
-                                text = Strings.t("screen.inventory.manage_categories"),
-                                fontWeight = FontWeight.SemiBold
+                                text = Strings.t("screen.inventory.title"),
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF0F172A)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = Strings.t("screen.inventory.subtitle"),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color(0xFF64748B)
                             )
                         }
-                        Button(
-                            onClick = { showAddDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Orange),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(48.dp)
-                        ) {
-                            Text(text = "+", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = Strings.t("screen.inventory.add_ingredient"),
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            OutlinedButton(
+                                onClick = { showCategoryDialog = true },
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155)),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text(
+                                    text = Strings.t("screen.inventory.manage_categories"),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Button(
+                                onClick = { showAddDialog = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = Orange),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text(text = "+", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = Strings.t("screen.inventory.add_ingredient"),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                // ── Stats cards ──────────────────────────────────────────────────────
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        label = Strings.t("screen.inventory.stat.total_products"),
-                        value = "${ingredients.size}",
-                        icon = "📦",
-                        iconBg = Color(0xFFEFF6FF),
-                        iconColor = Color(0xFF3B82F6)
-                    )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        label = Strings.t("screen.inventory.stat.below_minimum"),
-                        value = "${belowMinimum.size}",
-                        valueColor = if (belowMinimum.isNotEmpty()) Color(0xFFDC2626) else Color(0xFF0F172A),
-                        icon = "⚠",
-                        iconBg = Color(0xFFFEF2F2),
-                        iconColor = Color(0xFFEF4444)
-                    )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        label = Strings.t("screen.inventory.stat.total_value"),
-                        value = String.format("%.0f€", totalValue),
-                        icon = "↗",
-                        iconBg = Color(0xFFDCFCE7),
-                        iconColor = Color(0xFF22C55E)
-                    )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        label = Strings.t("screen.inventory.stat.categories"),
-                        value = "${categories.size}",
-                        icon = "📉",
-                        iconBg = Color(0xFFFFEDD5),
-                        iconColor = Color(0xFFF97316)
-                    )
-                }
+                    // ── Stats cards ──────────────────────────────────────────────────────
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        StatCard(
+                            modifier = Modifier.weight(1f),
+                            label = Strings.t("screen.inventory.stat.total_products"),
+                            value = "${ingredients.size}",
+                            icon = "📦",
+                            iconBg = Color(0xFFEFF6FF),
+                            iconColor = Color(0xFF3B82F6)
+                        )
+                        StatCard(
+                            modifier = Modifier.weight(1f),
+                            label = Strings.t("screen.inventory.stat.below_minimum"),
+                            value = "${belowMinimum.size}",
+                            valueColor = if (belowMinimum.isNotEmpty()) Color(0xFFDC2626) else Color(0xFF0F172A),
+                            icon = "⚠",
+                            iconBg = Color(0xFFFEF2F2),
+                            iconColor = Color(0xFFEF4444)
+                        )
+                        StatCard(
+                            modifier = Modifier.weight(1f),
+                            label = Strings.t("screen.inventory.stat.total_value"),
+                            value = String.format("%.0f€", totalValue),
+                            icon = "↗",
+                            iconBg = Color(0xFFDCFCE7),
+                            iconColor = Color(0xFF22C55E)
+                        )
+                        StatCard(
+                            modifier = Modifier.weight(1f),
+                            label = Strings.t("screen.inventory.stat.categories"),
+                            value = "${categories.size}",
+                            icon = "📉",
+                            iconBg = Color(0xFFFFEDD5),
+                            iconColor = Color(0xFFF97316)
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                // ── Low stock alert ───────────────────────────────────────────────────
-                if (belowMinimum.isNotEmpty()) {
+                    // ── Low stock alert ───────────────────────────────────────────────────
+                    if (belowMinimum.isNotEmpty()) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+                            border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("⚠", fontSize = 20.sp, color = Color(0xFFEF4444))
+                                Spacer(Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = Strings.t("screen.inventory.alert.low_stock_title"),
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFB91C1C),
+                                        fontSize = 16.sp
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Row {
+                                        Text(
+                                            text = Strings.t("screen.inventory.alert.low_stock_text_prefix"),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFFB91C1C)
+                                        )
+                                        Text(
+                                            text = " " + belowMinimum.joinToString(", ") { it.name },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFB91C1C)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    // ── Category filter pills ─────────────────────────────────────────────
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-                        border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("⚠", fontSize = 20.sp, color = Color(0xFFEF4444))
-                            Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = Strings.t("screen.inventory.alert.low_stock_title"),
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFB91C1C),
-                                    fontSize = 16.sp
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Row {
+                        Row(
+                            modifier = Modifier.padding(12.dp).horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val allCategories =
+                                listOf(Category(-1, Strings.t("screen.inventory.filter.all"))) + categories
+                            allCategories.forEach { cat ->
+                                val selected = cat == selectedCategory
+                                Button(
+                                    onClick = { selectedCategory = cat },
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selected) Orange else Color(0xFFF8FAFC)
+                                    ),
+                                    shape = RoundedCornerShape(20.dp)
+                                ) {
                                     Text(
-                                        text = Strings.t("screen.inventory.alert.low_stock_text_prefix"),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFFB91C1C)
-                                    )
-                                    Text(
-                                        text = " " + belowMinimum.joinToString(", ") { it.name },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFB91C1C)
+                                        text = cat.name,
+                                        color = if (selected) Color.White else Color(0xFF334155),
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 14.sp
                                     )
                                 }
                             }
                         }
                     }
+
                     Spacer(modifier = Modifier.height(24.dp))
-                }
 
-                // ── Category filter pills ─────────────────────────────────────────────
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp).horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val allCategories = listOf(Category(-1, Strings.t("screen.inventory.filter.all"))) + categories
-                        allCategories.forEach { cat ->
-                            val selected = cat == selectedCategory
-                            Button(
-                                onClick = { selectedCategory = cat },
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (selected) Orange else Color(0xFFF8FAFC)
-                                ),
-                                shape = RoundedCornerShape(20.dp)
-                            ) {
-                                Text(
-                                    text = cat.name,
-                                    color = if (selected) Color.White else Color(0xFF334155),
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // ── Table ─────────────────────────────────────────────────────────────
-                IngredientsTable(
-                    displayed = displayed,
-                    { editTarget = it },
-                    { deleteTarget = it }
-                )
-            }
-            if (showAddDialog) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    IngredientFormDialog(
-                        title = Strings.t("screen.ingredient.new_title"),
-                        categories = categories,
-                        initial = null,
-                        onDismiss = { showAddDialog = false },
-                        onConfirm = { ingredient ->
-                            if (!ingredients.any { it.name == ingredient.name }) {
-                                viewModel.addIngredient(ingredient)
-                                showAddDialog = false
-                            } else {
-                                snackbarMessage = Strings.t("screen.ingredient.form.error.namerepeated")
-                            }
-                        },
-                        snackbarMessage
+                    // ── Table ─────────────────────────────────────────────────────────────
+                    IngredientsTable(
+                        displayed = displayed,
+                        { editTarget = it },
+                        { deleteTarget = it }
                     )
                 }
-            }
-
-            editTarget?.let { ing ->
-                IngredientFormDialog(
-                    title = Strings.t("screen.ingredient.edit_title"),
-                    categories = categories,
-                    initial = ing,
-                    onDismiss = { editTarget = null },
-                    onConfirm = { updated ->
-                        viewModel.updateIngredient(updated.copy(id = ing.id))
-                        editTarget = null
+                if (showAddDialog) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        IngredientFormDialog(
+                            title = Strings.t("screen.ingredient.new_title"),
+                            categories = categories,
+                            initial = null,
+                            onDismiss = { showAddDialog = false },
+                            onConfirm = { ingredient ->
+                                if (!ingredients.any { it.name == ingredient.name }) {
+                                    viewModel.addIngredient(ingredient)
+                                    showAddDialog = false
+                                } else {
+                                    snackbarMessage = Strings.t("screen.ingredient.form.error.namerepeated")
+                                }
+                            },
+                            snackbarMessage
+                        )
                     }
-                )
-            }
+                }
 
-            deleteTarget?.let { ing ->
-                AlertDialog(
-                    onDismissRequest = { deleteTarget = null },
-                    title = { Text(text = Strings.t("screen.ingredient.delete_title")) },
-                    text = { Text(text = String.format(Strings.t("screen.ingredient.delete_confirm"), ing.name)) },
-                    confirmButton = {
-                        TextButton(onClick = { viewModel.deleteIngredient(ing.id); deleteTarget = null }) {
-                            Text(text = Strings.t("screen.inventory.action.delete"), color = Color(0xFFD32F2F))
+                editTarget?.let { ing ->
+                    IngredientFormDialog(
+                        title = Strings.t("screen.ingredient.edit_title"),
+                        categories = categories,
+                        initial = ing,
+                        onDismiss = { editTarget = null },
+                        onConfirm = { updated ->
+                            viewModel.updateIngredient(updated.copy(id = ing.id))
+                            editTarget = null
                         }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = {
-                            deleteTarget = null
-                        }) { Text(text = Strings.t("screen.ingredient.form.cancel")) }
-                    }
-                )
-            }
+                    )
+                }
 
-            if (showCategoryDialog) {
-                CategoryManagerDialog(
-                    categories = categories,
-                    onDismiss = { showCategoryDialog = false },
-                    onAdd = { },
-                    onDelete = { }
-                )
+                deleteTarget?.let { ing ->
+                    AlertDialog(
+                        onDismissRequest = { deleteTarget = null },
+                        title = { Text(text = Strings.t("screen.ingredient.delete_title")) },
+                        text = { Text(text = String.format(Strings.t("screen.ingredient.delete_confirm"), ing.name)) },
+                        confirmButton = {
+                            TextButton(onClick = { viewModel.deleteIngredient(ing.id); deleteTarget = null }) {
+                                Text(text = Strings.t("screen.inventory.action.delete"), color = Color(0xFFD32F2F))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = {
+                                deleteTarget = null
+                            }) { Text(text = Strings.t("screen.ingredient.form.cancel")) }
+                        }
+                    )
+                }
+
+                if (showCategoryDialog) {
+                    CategoryManagerDialog(
+                        categories = categories,
+                        onDismiss = { showCategoryDialog = false },
+                        onAdd = { },
+                        onDelete = { }
+                    )
+                }
             }
         }
     }

@@ -8,6 +8,9 @@ class OrdersService(
 ) {
     suspend fun getOrders(): List<Order> = repository.getOrders()
 
+    fun loadRole(): String? =
+        repository.loadRole()
+
     suspend fun addOrder(order: Order) = repository.addOrder(order)
     suspend fun updateOrder(order: Order) = repository.updateOrder(order)
 

@@ -2,7 +2,6 @@ package com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.OrderCreatedResponse
 import com.tfg_rm.desktopapp_restaurantmanager.domain.NewOrderStep
 import com.tfg_rm.desktopapp_restaurantmanager.domain.OrderType
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.*
@@ -14,9 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import java.nio.channels.UnresolvedAddressException
-import kotlin.coroutines.cancellation.CancellationException
+import java.time.LocalDateTime
 
 class NewOrderViewModel(
     private val dishesService: DishesService,
@@ -35,8 +33,13 @@ class NewOrderViewModel(
     private val _selectedTableId = MutableStateFlow<Table?>(null)
     val selectedTableId: StateFlow<Table?> = _selectedTableId.asStateFlow()
 
+    private val _datePickup = MutableStateFlow<LocalDateTime?>(null)
+    val datePickup: StateFlow<LocalDateTime?> = _datePickup.asStateFlow()
+
     private val _deliveryAddress = MutableStateFlow("")
     val deliveryAddress: StateFlow<String> = _deliveryAddress.asStateFlow()
+
+    private val _pastOrder = MutableStateFlow<Order?>(null)
 
     // Tables for the map
     private val _tables = MutableStateFlow<UiState<List<Table>>>(UiState.Idle)
@@ -66,7 +69,6 @@ class NewOrderViewModel(
             try {
                 val tables = tablesService.getTables()
                 val dishes = dishesService.getDishes().filter { it.available }
-                observeSocketMessages()
                 _tables.value = UiState.Success(tables)
                 _dishes.value = UiState.Success(dishes)
             } catch (e: UnresolvedAddressException) {
@@ -78,6 +80,9 @@ class NewOrderViewModel(
         }
     }
 
+    fun loadRole(): String? =
+        ordersService.loadRole()
+
     // ─── Step 1: type & table ────────────────────────────────────────────────
     fun selectOrderType(type: OrderType) {
         _orderType.value = type
@@ -87,16 +92,47 @@ class NewOrderViewModel(
         _selectedTableId.value = table
     }
 
+    fun setDatePickup(date: LocalDateTime?) {
+        _datePickup.value = date
+    }
+
     fun setDeliveryAddress(addr: String) {
         _deliveryAddress.value = addr
     }
 
-    fun confirmType() {
-        if (_orderType.value == OrderType.TABLE && _selectedTableId.value == null) return
-        _step.value = NewOrderStep.DISHES
+    fun confirmType(orders: List<Order>) {
+        if (!(_orderType.value == OrderType.TABLE && _selectedTableId.value == null)) {
+            if (_orderType.value == OrderType.TABLE) {
+                val actualOrder = orders.find { it.tableId == _selectedTableId.value?.id && it.status == "CREATED" }
+                continueOrder(actualOrder)
+            }
+            _step.value = NewOrderStep.DISHES
+        }
     }
 
     // ─── Step 2: dishes ──────────────────────────────────────────────────────
+
+    fun continueOrder(order: Order?) {
+        if (order != null) {
+            if (_dishes.value is UiState.Success) {
+                _pastOrder.value = order
+                _draftItems.value = order.orderItemsList.mapNotNull { item ->
+                    val foundDish = (_dishes.value as UiState.Success<List<Dishes>>).data.find { it.id == item.dishId }
+
+                    if (foundDish != null) {
+                        DraftItem(
+                            dish = foundDish,
+                            quantity = item.quantity,
+                            notes = item.notes ?: ""
+                        )
+                    } else {
+                        null
+                    }
+                }
+            }
+        }
+    }
+
     fun addDraftItem(item: DraftItem) {
         val list = _draftItems.value.toMutableList()
         // If same dish already exists, increment quantity instead
@@ -152,19 +188,40 @@ class NewOrderViewModel(
                     )
                 }
                 val total = items.sumOf { it.unitPrice * it.quantity }
-                val order = Order(
-                    id = 0,
-                    tableId = _selectedTableId.value?.id ?: 0,
-                    status = "CREATED",
-                    total = total,
-                    orderType = _orderType.value.name,
-                    notes = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
-                    deliveryAddress = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
-                    orderItemsList = items.toMutableList(),
-                    type = _orderType.value.name
-                )
                 _step.value = NewOrderStep.SENDED
-                ordersService.addOrder(order)
+                if (_pastOrder.value != null) {
+                    ordersService.updateOrder(
+                        _pastOrder.value
+                            ?.copy(total = total, orderItemsList = items.toMutableList())
+                            ?: Order(
+                                id = 0,
+                                tableId = _selectedTableId.value?.id ?: 0,
+                                tableName = _selectedTableId.value?.name,
+                                status = "CREATED",
+                                total = total,
+                                orderType = _orderType.value.name,
+                                notes = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
+                                deliveryAddress = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
+                                pickupTime = _datePickup.value,
+                                orderItemsList = items.toMutableList(),
+                                type = _orderType.value.name
+                            ))
+                } else {
+                    ordersService.addOrder(
+                        Order(
+                            id = 0,
+                            tableId = _selectedTableId.value?.id ?: 0,
+                            tableName = _selectedTableId.value?.name,
+                            status = "CREATED",
+                            total = total,
+                            orderType = _orderType.value.name,
+                            notes = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
+                            deliveryAddress = if (_orderType.value == OrderType.DELIVERY) _deliveryAddress.value.ifBlank { null } else null,
+                            pickupTime = _datePickup.value,
+                            orderItemsList = items.toMutableList(),
+                            type = _orderType.value.name
+                        ))
+                }
                 _step.value = NewOrderStep.SENDOK
                 reset()
             } catch (e: UnresolvedAddressException) {
@@ -174,44 +231,6 @@ class NewOrderViewModel(
                 e.printStackTrace()
                 println("Error on submitOrder in NewOrderViewModel")
                 reset()
-            }
-        }
-    }
-
-    private fun observeSocketMessages() {
-        viewModelScope.launch {
-            try {
-                ordersService.observeMessages().collect { message ->
-                    println("Mensaje recibido en OrdersViewModel: $message")
-                    when {
-                        message.contains("ORDER_CREATED") -> {
-                            val result = Json.decodeFromString<OrderCreatedResponse>(message)
-                            println(result.toString())//Falta implementacion tanto del back como de desktop y móvil
-                        }
-
-                        message.contains("STATE_ORDER_UPDATE") -> {
-                            val result = Json.decodeFromString<OrderCreatedResponse>(message)
-                            println(result.toString())//Falta implementacion tanto del back como de desktop y móvil
-                        }
-
-                        message.contains("FAILED_CREATE_ORDER") -> {
-                            println("Error al crear la orden FAILED_CREATE_ORDER")
-                        }
-
-                        message.contains("FAILED_UNHANDLED_TYPE") -> {
-                            println("Error al crear la orden FAILED_UNHANDLED_TYPE")
-                        }
-
-                        message.contains("FAILED_UNHANDLED_MESSAGE") -> {
-                            println("Error al crear la orden FAILED_UNHANDLED_MESSAGE")
-                        }
-                    }
-                }
-            } catch (_: CancellationException) {
-                ordersService.disconnectWS()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                println(e.message)
             }
         }
     }

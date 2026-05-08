@@ -37,6 +37,9 @@ class InventoryViewModel(
         _ingredients.value = UiState.Idle
     }
 
+    fun loadRole(): String? =
+        service.loadRole()
+
     fun loadInventory() {
         _ingredients.value = UiState.Loading
         viewModelScope.launch {

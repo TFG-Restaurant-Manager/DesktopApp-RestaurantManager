@@ -3,6 +3,9 @@ package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,223 +54,248 @@ private val dayNames = mapOf(
 fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.employees.collectAsState()
 
-    when (state) {
-        is UiState.Idle -> {
-            viewModel.loadEmployees()
-        }
+    if (viewModel.loadRole() != "MANAGER") {
+        ErrorScreen(
+            title = Strings.t("screen.tables.error.title"),
+            message = Strings.t("errors.permission")
+        )
+    } else {
+        when (state) {
+            is UiState.Idle -> {
+                viewModel.loadEmployees()
+            }
 
-        is UiState.Error -> {
-            ErrorScreen(
-                title = Strings.t("screen.shift.error.generic"),
-                message = (state as UiState.Error).message,
-                primaryAction = Pair(Strings.t("reload")) { viewModel.loadEmployees() }
-            )
-        }
+            is UiState.Error -> {
+                ErrorScreen(
+                    title = Strings.t("screen.shift.error.generic"),
+                    message = (state as UiState.Error).message,
+                    primaryAction = Pair(Strings.t("reload")) { viewModel.loadEmployees() }
+                )
+            }
 
-        UiState.Loading -> {
-            LoadingScreen(Strings.t("screen.shift.loading.message"))
-        }
+            UiState.Loading -> {
+                LoadingScreen(Strings.t("screen.shift.loading.message"))
+            }
 
-        is UiState.Success<List<Employee>> -> {
-            var weekStart by remember { mutableStateOf(LocalDate.now().with(DayOfWeek.MONDAY)) }
-            val employees = (state as UiState.Success<List<Employee>>).data
-            val saveState = viewModel.scheduleState.collectAsState()
-            // Editing state: a pair of (employee, day) being edited
-            var editTarget by remember { mutableStateOf<Pair<Employee, DayOfWeek>?>(null) }
+            is UiState.Success<List<Employee>> -> {
+                var weekStart by remember { mutableStateOf(LocalDate.now().with(DayOfWeek.MONDAY)) }
+                val employees = (state as UiState.Success<List<Employee>>).data
+                val saveState = viewModel.scheduleState.collectAsState()
+                // Editing state: a pair of (employee, day) being edited
+                var editTarget by remember { mutableStateOf<Pair<Employee, DayOfWeek>?>(null) }
 
-            val weekEnd = weekStart.plusDays(6)
-            val fmt = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es"))
+                var clipboardSchedules by remember { mutableStateOf<List<Shift>?>(null) }
+
+                val weekEnd = weekStart.plusDays(6)
+                val fmt = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es"))
 
 
-            val totalHours = employees.sumOf { employee ->
-                employee.schedules.filter {
-                    val dia = it.startDateTime.toLocalDate()
+                val totalHours = employees.sumOf { employee ->
+                    employee.schedules.filter {
+                        val dia = it.startDateTime.toLocalDate()
 
-                    weekStart.equals(dia.minusDays((dia.dayOfWeek.value - 1).toLong()))
-                }.sumOf {
-                    val mins = java.time.Duration.between(it.startDateTime, it.endDateTime).toMinutes()
-                    if (mins < 0) 0L else mins
-                }
-            } / 60 / employees.size
+                        weekStart.equals(dia.minusDays((dia.dayOfWeek.value - 1).toLong()))
+                    }.sumOf {
+                        val mins = java.time.Duration.between(it.startDateTime, it.endDateTime).toMinutes()
+                        if (mins < 0) 0L else mins
+                    }
+                } / 60 / employees.size
 
-            Column(modifier = modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp)) {
+                Column(modifier = modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp)) {
 
-                // Header card
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    // Header card
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Canvas(modifier = Modifier.size(24.dp)) {
-                                drawCircle(color = Color(0xFFF97316), style = Stroke(width = 2.dp.toPx()))
-                                drawLine(
-                                    color = Color(0xFFF97316),
-                                    start = center,
-                                    end = Offset(center.x, center.y - 6.dp.toPx()),
-                                    strokeWidth = 2.dp.toPx(),
-                                    cap = StrokeCap.Round
-                                )
-                                drawLine(
-                                    color = Color(0xFFF97316),
-                                    start = center,
-                                    end = Offset(center.x + 4.dp.toPx(), center.y),
-                                    strokeWidth = 2.dp.toPx(),
-                                    cap = StrokeCap.Round
-                                )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Canvas(modifier = Modifier.size(24.dp)) {
+                                    drawCircle(color = Color(0xFFF97316), style = Stroke(width = 2.dp.toPx()))
+                                    drawLine(
+                                        color = Color(0xFFF97316),
+                                        start = center,
+                                        end = Offset(center.x, center.y - 6.dp.toPx()),
+                                        strokeWidth = 2.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                    drawLine(
+                                        color = Color(0xFFF97316),
+                                        start = center,
+                                        end = Offset(center.x + 4.dp.toPx(), center.y),
+                                        strokeWidth = 2.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(
+                                        text = Strings.t("screen.schedule.header.current_week"),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1E293B)
+                                    )
+                                    Text(
+                                        text = "${weekStart.format(fmt)} - ${weekEnd.format(fmt)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
                             }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
+                            Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = Strings.t("screen.schedule.header.current_week"),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E293B)
-                                )
-                                Text(
-                                    text = "${weekStart.format(fmt)} - ${weekEnd.format(fmt)}",
+                                    text = Strings.t("screen.schedule.header.total_hours"),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color(0xFF64748B)
                                 )
-                            }
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = Strings.t("screen.schedule.header.total_hours"),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF64748B)
-                            )
-                            Text(
-                                text = "${totalHours}h",
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            // Week navigation + save
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OutlinedButton(
-                                    onClick = { weekStart = weekStart.minusDays(7) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
-                                    modifier = Modifier.height(36.dp)
+                                Text(
+                                    text = "${totalHours}h",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                // Week navigation + save
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = "←", fontWeight = FontWeight.Bold)
-                                }
-                                OutlinedButton(
-                                    onClick = { weekStart = weekStart.plusDays(7) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
-                                    modifier = Modifier.height(36.dp)
-                                ) {
-                                    Text(text = "→", fontWeight = FontWeight.Bold)
-                                }
-                                Button(
-                                    onClick = { viewModel.saveSchedules() },
-                                    enabled = saveState.value !is UiState.Loading,
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.height(36.dp)
-                                ) {
-                                    if (saveState.value is UiState.Loading) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
-                                            color = Color.White,
-                                            strokeWidth = 2.dp
-                                        )
-                                    } else {
-                                        Text(
-                                            text = if (saveState.value is UiState.Success) "✓ Guardado" else "Guardar",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
+                                    OutlinedButton(
+                                        onClick = { weekStart = weekStart.minusDays(7) },
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        Text(text = "←", fontWeight = FontWeight.Bold)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { weekStart = weekStart.plusDays(7) },
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569)),
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        Text(text = "→", fontWeight = FontWeight.Bold)
+                                    }
+                                    Button(
+                                        onClick = { viewModel.saveSchedules() },
+                                        enabled = saveState.value !is UiState.Loading,
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        if (saveState.value is UiState.Loading) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                color = Color.White,
+                                                strokeWidth = 2.dp
+                                            )
+                                        } else {
+                                            Text(
+                                                text = if (saveState.value is UiState.Success) "✓ Guardado" else "Guardar",
+                                                color = Color.White,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
                                     }
                                 }
+                                if (saveState.value is UiState.Error) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = (saveState.value as UiState.Error).message,
+                                        color = Color(0xFFEF4444),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
-                            if (saveState.value is UiState.Error) {
-                                Spacer(modifier = Modifier.height(4.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Hint banner
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F6FF)),
+                        border = BorderStroke(1.dp, Color(0xFFD6E4FF)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "💡", fontSize = 16.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Row {
                                 Text(
-                                    text = (saveState.value as UiState.Error).message,
-                                    color = Color(0xFFEF4444),
-                                    style = MaterialTheme.typography.bodySmall
+                                    text = Strings.t("screen.schedule.hint1"),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF1D4ED8),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = " ${Strings.t("screen.schedule.hint2")}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF1D4ED8),
+                                    fontWeight = FontWeight.Normal
                                 )
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                // Hint banner
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F6FF)),
-                    border = BorderStroke(1.dp, Color(0xFFD6E4FF)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "💡", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Row {
-                            Text(
-                                text = Strings.t("screen.schedule.hint1"),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF1D4ED8),
-                                fontWeight = FontWeight.Bold
+                    // Weekly table
+                    WeeklyTable(
+                        employees = employees,
+                        weekStart = weekStart,
+                        clipboardSchedules,
+                        { clipboardSchedules = it },
+                        editTarget = { editTarget = it },
+                        onPaste = { employee, newWeekSchedules ->
+                            val otherWeeksSchedules = employee.schedules.filterNot { shift ->
+                                val date = shift.startDateTime.toLocalDate()
+                                // Si la fecha está entre weekStart y weekStart + 6 días, es de esta semana
+                                !date.isBefore(weekStart) && !date.isAfter(weekStart.plusDays(6))
+                            }
+
+                            val updatedEmployee = employee.copy(
+                                schedules = otherWeeksSchedules + newWeekSchedules
                             )
-                            Text(
-                                text = " ${Strings.t("screen.schedule.hint2")}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF1D4ED8),
-                                fontWeight = FontWeight.Normal
-                            )
+
+                            viewModel.updateSchedule(updatedEmployee)
                         }
-                    }
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                // Shift edit dialog
+                editTarget?.let { (emp, day) ->
+                    val shiftDate = weekStart.plusDays((day.value - 1).toLong())
+                    ShiftEditDialog(
+                        employee = emp,
+                        day = day,
+                        weekStart = weekStart,
+                        currentShift = emp.schedules.filter { it.startDateTime.toLocalDate().isEqual(shiftDate) },
+                        onDismiss = { editTarget = null },
+                        onSave = { employee, schedules ->
+                            val updatedEmployee = employee.copy(
+                                schedules = employee.schedules
+                                    .filterNot { it.startDateTime.toLocalDate().equals(shiftDate) }
+                                    .plus(schedules)
+                            )
 
-                // Weekly table
-                WeeklyTable(
-                    employees = employees,
-                    weekStart = weekStart
-                ) { editTarget = it }
-            }
-
-            // Shift edit dialog
-            editTarget?.let { (emp, day) ->
-                val shiftDate = weekStart.plusDays((day.value - 1).toLong())
-                ShiftEditDialog(
-                    employee = emp,
-                    day = day,
-                    weekStart = weekStart,
-                    currentShift = emp.schedules.filter { it.startDateTime.toLocalDate().isEqual(shiftDate) },
-                    onDismiss = { editTarget = null },
-                    onSave = { employee, schedules ->
-                        val updatedEmployee = employee.copy(
-                            schedules = employee.schedules
-                                .filterNot { it.startDateTime.toLocalDate().equals(shiftDate) }
-                                .plus(schedules)
-                        )
-
-                        viewModel.updateSchedule(updatedEmployee)
-                        editTarget = null
-                    }
-                )
+                            viewModel.updateSchedule(updatedEmployee)
+                            editTarget = null
+                        }
+                    )
+                }
             }
         }
     }
@@ -277,7 +305,10 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
 private fun WeeklyTable(
     employees: List<Employee>,
     weekStart: LocalDate,
-    editTarget: (Pair<Employee, DayOfWeek>) -> Unit
+    clipboardSchedules: List<Shift>?,
+    onclipboardSchedulesChange: (List<Shift>) -> Unit,
+    editTarget: (Pair<Employee, DayOfWeek>) -> Unit,
+    onPaste: (Employee, List<Shift>) -> Unit
 ) {
     val verticalScroll = rememberScrollState()
 
@@ -369,6 +400,73 @@ private fun WeeklyTable(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF64748B)
                                 )
+                                Row {
+                                    // BOTÓN COPIAR
+                                    IconButton(
+                                        onClick = {
+                                            onclipboardSchedulesChange(
+                                                emp.schedules.filter {
+                                                    val dia = it.startDateTime.toLocalDate()
+                                                    !dia.isBefore(weekStart) && !dia.isAfter(weekStart.plusDays(6))
+                                                }
+                                            )
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            Strings.t("copy")
+                                        )
+                                    }
+
+                                    // BOTÓN PEGAR
+                                    IconButton(
+                                        onClick = {
+                                            clipboardSchedules?.let { copiedSchedules ->
+                                                val updatedSchedules = copiedSchedules.map { oldShift ->
+                                                    // 1. Buscamos el lunes de la semana de donde venía el turno original
+                                                    val originalDate = oldShift.startDateTime.toLocalDate()
+                                                    val originalMonday = originalDate.with(DayOfWeek.MONDAY)
+
+                                                    // 2. Calculamos cuántos días de diferencia hay (0 para Lunes, 1 para Martes, etc.)
+                                                    val daysFromMonday = java.time.temporal.ChronoUnit.DAYS.between(
+                                                        originalMonday,
+                                                        originalDate
+                                                    )
+
+                                                    // 3. Aplicamos esa diferencia al lunes de la semana ACTUAL (destino)
+                                                    val targetDate = weekStart.plusDays(daysFromMonday)
+
+                                                    oldShift.copy(
+                                                        // Forzamos el ID a 0 para que el backend lo trate como nuevo
+                                                        // o lo regenere si es necesario, evitando conflictos de Primary Key
+                                                        id = 0,
+                                                        startDateTime = LocalDateTime.of(
+                                                            targetDate,
+                                                            oldShift.startDateTime.toLocalTime()
+                                                        ),
+                                                        endDateTime = LocalDateTime.of(
+                                                            targetDate,
+                                                            oldShift.endDateTime.toLocalTime()
+                                                        )
+                                                    )
+                                                }
+
+                                                // 4. Limpiamos la semana actual del empleado destino y añadimos los nuevos
+                                                val finalSchedules = emp.schedules.filterNot {
+                                                    val dia = it.startDateTime.toLocalDate()
+                                                    !dia.isBefore(weekStart) && !dia.isAfter(weekStart.plusDays(6))
+                                                } + updatedSchedules
+
+                                                onPaste(emp, finalSchedules)
+                                            }
+                                        },
+                                        enabled = clipboardSchedules != null,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(Icons.Default.ContentPaste, Strings.t("paste"))
+                                    }
+                                }
                             }
 
                             // DAYS

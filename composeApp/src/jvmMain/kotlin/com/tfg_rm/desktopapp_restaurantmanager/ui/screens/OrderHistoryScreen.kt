@@ -128,14 +128,14 @@ fun OrderHistoryScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "#",
+                                "ID",
                                 Modifier.width(48.dp),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
                             Text(
-                                Strings.t("screen.orderHistory.col.table"),
-                                Modifier.width(80.dp),
+                                Strings.t("screen.orderHistory.col.origin"),
+                                Modifier.width(140.dp),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -148,12 +148,6 @@ fun OrderHistoryScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier
                             Text(
                                 Strings.t("screen.orderHistory.col.total"),
                                 Modifier.width(90.dp),
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Text(
-                                Strings.t("screen.orderHistory.col.status"),
-                                Modifier.width(110.dp),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -214,12 +208,21 @@ private fun OrderHistoryRow(order: Order) {
         )
         Text(
             text = when (order.type) {
-                "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${order.tableId ?: ""}"
+                "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${
+                    if (order.tableName != null) {
+                        if (order.tableName.isEmpty()) order.tableId.toString()
+                        else if (order.tableName.length >= 3) order.tableName.substring(
+                            3
+                        )
+                        else order.tableName
+                    } else order.tableId.toString()
+                }"
+
                 "DELIVERY" -> Strings.t("screen.orderHistory.col.delivery")
                 "PICKUP" -> Strings.t("screen.orderHistory.col.pickup")
                 else -> "---"
             },
-            modifier = Modifier.width(80.dp),
+            modifier = Modifier.width(140.dp),
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyMedium
         )
@@ -231,15 +234,12 @@ private fun OrderHistoryRow(order: Order) {
             maxLines = 2
         )
         Text(
-            text = "%.2f €".format(order.total),
+            text = "%.2f €".format(order.orderItemsList.sumOf { it.unitPrice * it.quantity }),
             modifier = Modifier.width(90.dp),
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFF0F172A)
         )
-        Box(modifier = Modifier.width(110.dp)) {
-            StatusBadge(order.status)
-        }
         Text(
             text = order.createdAt.format(fmt),
             modifier = Modifier.width(140.dp),

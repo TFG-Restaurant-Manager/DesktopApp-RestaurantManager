@@ -84,6 +84,7 @@ fun MainScreen(logOut: () -> Unit) {
             when (selected) {
                 "newOrder" -> NewOrderScreen(
                     viewModel = koinViewModel(),
+                    ordersViewModel = koinViewModel(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -93,7 +94,7 @@ fun MainScreen(logOut: () -> Unit) {
                 "schedule" -> ScheduleScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "inventory" -> InventoryScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "dishes" -> DishesScreen(koinViewModel(), Modifier.fillMaxWidth())
-                "economy" -> EconomyScreen(koinViewModel(), Modifier.fillMaxWidth())
+                "economy" -> PaymentScreen(koinViewModel(), Modifier.fillMaxWidth())
                 "orderHistory" -> OrderHistoryScreen(koinViewModel(), Modifier.fillMaxWidth())
                 else -> OrdersScreen(koinViewModel(), Modifier.fillMaxWidth())
             }
