@@ -227,12 +227,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                     modifier = Modifier.weight(2f)
                                 )
                                 Text(
-                                    Strings.t("screen.employees.text.salary"),
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF334155),
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
                                     Strings.t("screen.employees.text.status"),
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF334155),
@@ -278,23 +272,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                                 Text(emp.phone ?: "---", color = Color(0xFF64748B), fontSize = 14.sp)
                                             }
                                         }
-
-                                        // Mocking salary based on standard assumption
-                                        val mockSalary = if (emp.roleName.contains(
-                                                "Gerente",
-                                                ignoreCase = true
-                                            )
-                                        ) "2800€/mes" else if (emp.roleName.contains(
-                                                "Chef",
-                                                ignoreCase = true
-                                            )
-                                        ) "2500€/mes" else "1400€/mes"
-                                        Text(
-                                            mockSalary,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF0F172A),
-                                            modifier = Modifier.weight(1f)
-                                        )
 
                                         // Badge
                                         Box(modifier = Modifier.weight(1f)) {

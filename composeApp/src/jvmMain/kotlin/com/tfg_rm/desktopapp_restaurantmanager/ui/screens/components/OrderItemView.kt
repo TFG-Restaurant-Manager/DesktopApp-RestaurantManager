@@ -84,7 +84,7 @@ fun OrderItemView(
                     Text(
                         text = when (orderType) {
                             OrderType.TABLE.name -> "${Strings.t("screen.orderHistory.col.table")} ${
-                                if (tableName!!.isEmpty()) tableId.toString()
+                                if (tableName?.isEmpty() ?: true) tableId.toString()
                                 else if (tableName.length >= 3) tableName.substring(
                                     3
                                 )

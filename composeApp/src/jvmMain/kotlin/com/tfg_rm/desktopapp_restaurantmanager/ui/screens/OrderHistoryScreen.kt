@@ -215,7 +215,8 @@ private fun OrderHistoryRow(order: Order) {
                             3
                         )
                         else order.tableName
-                    } else order.tableId.toString()
+                    } else if (order.tableId == null)
+                        Strings.t("screen.newOrden.notableid") else order.tableId.toString()
                 }"
 
                 "DELIVERY" -> Strings.t("screen.orderHistory.col.delivery")
