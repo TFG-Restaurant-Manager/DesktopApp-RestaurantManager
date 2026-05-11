@@ -169,27 +169,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                 )
                             }
                         }
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(vertical = 24.dp, horizontal = 24.dp)) {
-                                Text(
-                                    text = Strings.t("screen.employees.text.totalpayroll"),
-                                    color = Color(0xFF64748B),
-                                    fontSize = 14.sp
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "${totalPayroll}€",
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
-                                )
-                            }
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
