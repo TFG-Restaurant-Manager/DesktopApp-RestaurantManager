@@ -442,7 +442,7 @@ private fun EditEmployeePasswordDialog(emp: Employee, onDismiss: () -> Unit, onS
 
 @Composable
 private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Employee) -> Unit) {
-    val roles = listOf("MANAGER", "WAITER", "COOKER", "ADMIN")
+    val roles = listOf("MANAGER", "WAITER", "COOKER")
     var roleExpanded by remember { mutableStateOf(false) }
     var role by remember { mutableStateOf(emp.roleName) }
     var name by remember { mutableStateOf(emp.name) }
