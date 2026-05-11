@@ -181,52 +181,54 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                                                 chipAbsPos = coords.positionInRoot()
                                             }
                                             .pointerInput(Unit) {
-                                                detectDragGestures(
-                                                    onDragStart = { localOffset ->
-                                                        newTableDragging = true
-                                                        // chipAbsPos + localOffset = absolute cursor position on screen
-                                                        newTableOffset = chipAbsPos + localOffset
+                                                if (actualSection != Section(null, "---")) {
+                                                    detectDragGestures(
+                                                        onDragStart = { localOffset ->
+                                                            newTableDragging = true
+                                                            // chipAbsPos + localOffset = absolute cursor position on screen
+                                                            newTableOffset = chipAbsPos + localOffset
 
-                                                        hoverCol = null
-                                                        hoverRow = null
-                                                    },
-                                                    onDrag = { change, amount ->
-                                                        change.consume()
-                                                        newTableOffset += amount
+                                                            hoverCol = null
+                                                            hoverRow = null
+                                                        },
+                                                        onDrag = { change, amount ->
+                                                            change.consume()
+                                                            newTableOffset += amount
 
-                                                        val relX =
-                                                            newTableOffset.x - gridTopLeft.x + cellSize.toPx() / 2
-                                                        val relY =
-                                                            newTableOffset.y - gridTopLeft.y + cellSize.toPx() / 2
-                                                        val cellPx = (cellSize + cellGap).toPx()
+                                                            val relX =
+                                                                newTableOffset.x - gridTopLeft.x + cellSize.toPx() / 2
+                                                            val relY =
+                                                                newTableOffset.y - gridTopLeft.y + cellSize.toPx() / 2
+                                                            val cellPx = (cellSize + cellGap).toPx()
 
-                                                        val col = (relX / cellPx).toInt() + 1
-                                                        val row = (relY / cellPx).toInt() + 1
+                                                            val col = (relX / cellPx).toInt() + 1
+                                                            val row = (relY / cellPx).toInt() + 1
 
-                                                        hoverCol = col.coerceIn(1, gridColumns)
-                                                        hoverRow = row.coerceIn(1, gridRows)
-                                                    },
-                                                    onDragEnd = {
-                                                        newTableDragging = false
+                                                            hoverCol = col.coerceIn(1, gridColumns)
+                                                            hoverRow = row.coerceIn(1, gridRows)
+                                                        },
+                                                        onDragEnd = {
+                                                            newTableDragging = false
 
-                                                        if (hoverCol != null && hoverRow != null) {
-                                                            val occupied =
-                                                                tables.any { it.posX == hoverCol && it.posY == hoverRow }
-                                                            if (!occupied) {
-                                                                pendingNewCol = hoverCol
-                                                                pendingNewRow = hoverRow
+                                                            if (hoverCol != null && hoverRow != null) {
+                                                                val occupied =
+                                                                    tables.any { it.posX == hoverCol && it.posY == hoverRow }
+                                                                if (!occupied) {
+                                                                    pendingNewCol = hoverCol
+                                                                    pendingNewRow = hoverRow
+                                                                }
                                                             }
-                                                        }
 
-                                                        hoverCol = null
-                                                        hoverRow = null
-                                                        newTableOffset = Offset.Zero
-                                                    },
-                                                    onDragCancel = {
-                                                        newTableDragging = false
-                                                        newTableOffset = Offset.Zero
-                                                    }
-                                                )
+                                                            hoverCol = null
+                                                            hoverRow = null
+                                                            newTableOffset = Offset.Zero
+                                                        },
+                                                        onDragCancel = {
+                                                            newTableDragging = false
+                                                            newTableOffset = Offset.Zero
+                                                        }
+                                                    )
+                                                }
                                             }
                                     ) {
                                         Surface(
