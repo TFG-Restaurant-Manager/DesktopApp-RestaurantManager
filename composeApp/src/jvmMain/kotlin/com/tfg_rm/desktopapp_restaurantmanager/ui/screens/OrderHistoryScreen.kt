@@ -50,7 +50,7 @@ fun OrderHistoryScreen(viewModel: OrdersViewModel, modifier: Modifier = Modifier
         is UiState.Success<List<Order>> -> {
             val orders = (state as UiState.Success<List<Order>>).data.filter { it.status == "PAID" }
 
-            val totalRevenue = orders.sumOf { it.total }
+            val totalRevenue = orders.sumOf { it.orderItemsList.sumOf { value -> value.unitPrice * value.quantity } }
             val today = java.time.LocalDate.now()
             val todayOrders = orders.count {
                 it.createdAt.toLocalDate().isEqual(today)
