@@ -38,5 +38,6 @@ fun Ingredient.toIngredientOperationRequest(): IngredientOperationRequest =
         stockQuantity = this.stockQuantity,
         costUnit = this.costUnit,
         minimumStock = this.minimumStock,
-        categoryId = this.category.id
+        categoryId = this.category.id,
+        categoryName = this.category.name
     )

@@ -13,6 +13,7 @@ data class DishCreateRequest(
     val name: String,
     val description: String,
     val categoryId: Int,
+    val categoryName: String,
     val price: Double,
     val available: Boolean,
     val restaurantId: Int,

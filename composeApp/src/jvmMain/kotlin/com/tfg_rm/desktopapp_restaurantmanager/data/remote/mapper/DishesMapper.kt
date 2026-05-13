@@ -37,6 +37,7 @@ fun Dishes.toDishCreateRequest(): DishCreateRequest {
         name = this.name,
         description = this.description!!,
         categoryId = this.category.id,
+        categoryName = this.category.name,
         price = this.price,
         available = this.available,
         restaurantId = this.restaurantId,

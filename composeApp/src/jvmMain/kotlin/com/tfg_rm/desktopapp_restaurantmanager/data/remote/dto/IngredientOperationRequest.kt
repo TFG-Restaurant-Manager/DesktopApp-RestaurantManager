@@ -9,5 +9,6 @@ data class IngredientOperationRequest(
     val stockQuantity: Double,
     val costUnit: Double,
     val minimumStock: Double,
-    val categoryId: Int?
+    val categoryId: Int,
+    val categoryName: String
 )
