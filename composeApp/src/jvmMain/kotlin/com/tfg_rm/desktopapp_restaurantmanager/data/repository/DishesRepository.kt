@@ -16,9 +16,9 @@ class DishesRepository(
 
     suspend fun getDishes(): List<Dishes> = remoteDataSource.getDishes().map { it.toDishes() }
 
-    suspend fun addDish(dish: Dishes) {
+    suspend fun addDish(dish: Dishes): Dishes {
         val request = dish.toDishCreateRequest()
-        remoteDataSource.createDish(request)
+        return remoteDataSource.createDish(request).toDishes()
     }
 
     suspend fun updateDish(dish: Dishes) {

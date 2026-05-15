@@ -311,7 +311,17 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                 viewModel.resetCreateState()
                             },
                             onSave = { newEmp, password ->
-                                viewModel.addEmployee(newEmp, password)
+                                viewModel.addEmployee(
+                                    newEmp.copy(
+                                        roleName = when (newEmp.roleName) {
+                                            Strings.t("screen.employees.role1") -> "MANAGER"
+                                            Strings.t("screen.employees.role2") -> "WAITER"
+                                            Strings.t("screen.employees.role3") -> "COOKER"
+                                            else -> "MANAGER"
+                                        }
+                                    ),
+                                    password
+                                )
                             }
                         )
                     }
@@ -321,7 +331,16 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                             emp = emp,
                             onDismiss = { editingEmployee.value = null },
                             onSave = { updated ->
-                                viewModel.updateEmployee(updated)
+                                viewModel.updateEmployee(
+                                    updated.copy(
+                                        roleName = when (updated.roleName) {
+                                            Strings.t("screen.employees.role1") -> "MANAGER"
+                                            Strings.t("screen.employees.role2") -> "WAITER"
+                                            Strings.t("screen.employees.role3") -> "COOKER"
+                                            else -> "MANAGER"
+                                        }
+                                    )
+                                )
                                 editingEmployee.value = null
                             }
                         )
@@ -421,7 +440,11 @@ private fun EditEmployeePasswordDialog(emp: Employee, onDismiss: () -> Unit, onS
 
 @Composable
 private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Employee) -> Unit) {
-    val roles = listOf("MANAGER", "WAITER", "COOKER")
+    val roles = listOf(
+        Strings.t("screen.employees.role1"),
+        Strings.t("screen.employees.role2"),
+        Strings.t("screen.employees.role3")
+    )
     var roleExpanded by remember { mutableStateOf(false) }
     var role by remember { mutableStateOf(emp.roleName) }
     var name by remember { mutableStateOf(emp.name) }
@@ -626,7 +649,11 @@ private fun NewEmployeeDialog(
     onDismiss: () -> Unit,
     onSave: (Employee, String) -> Unit
 ) {
-    val roles = listOf("MANAGER", "WAITER", "COOKER", "ADMIN")
+    val roles = listOf(
+        Strings.t("screen.employees.role1"),
+        Strings.t("screen.employees.role2"),
+        Strings.t("screen.employees.role3")
+    )
     var role by remember { mutableStateOf(roles[0]) }
     var roleExpanded by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
@@ -841,7 +868,10 @@ private fun NewEmployeeDialog(
                         roles.forEach { r ->
                             DropdownMenuItem(
                                 text = { Text(text = r) },
-                                onClick = { role = r; roleExpanded = false }
+                                onClick = {
+                                    role = r
+                                    roleExpanded = false
+                                }
                             )
                         }
                     }

@@ -40,7 +40,8 @@ fun Table.toTableCreateRequest(): TableCreateRequest =
         capacity = this.capacity,
         posX = this.posX,
         posY = this.posY,
-        sectionId = this.section.id
+        sectionId = this.section.id,
+        sectionName = this.section.name
     )
 
 fun TablesOrders.toTable(): Table =

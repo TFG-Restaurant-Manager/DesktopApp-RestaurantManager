@@ -48,6 +48,7 @@ class DishesViewModel(
         viewModelScope.launch {
             try {
                 val resultDishes = service.getDishes()
+                println(resultDishes)
                 val resultIngredients = service.getIngredients()
                 observeSocketMessages()
                 _dishes.value = UiState.Success(resultDishes)
@@ -68,10 +69,10 @@ class DishesViewModel(
     fun addDish(dish: Dishes) {
         viewModelScope.launch {
             try {
-                service.addDish(dish)
+                val newDish = service.addDish(dish)
                 _dishes.update { state ->
-                    if (state is UiState.Success) {
-                        UiState.Success(state.data + dish)
+                    if (state is UiState.Success<List<Dishes>>) {
+                        UiState.Success(state.data + newDish)
                     } else state
                 }
             } catch (_: UnresolvedAddressException) {
@@ -110,7 +111,9 @@ class DishesViewModel(
     fun deleteDish(id: Int) {
         viewModelScope.launch {
             try {
+
                 service.deleteDish(id)
+                println(id)
                 _dishes.update { state ->
                     if (state is UiState.Success) {
                         UiState.Success(state.data.filter { it.id != id })
