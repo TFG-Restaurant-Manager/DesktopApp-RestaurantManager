@@ -9,6 +9,8 @@ import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 object NetworkProvider {
 
@@ -26,7 +28,9 @@ object NetworkProvider {
                 )
             }
 
-            install(WebSockets)
+            install(WebSockets) {
+                pingInterval = 20.toDuration(DurationUnit.SECONDS).toLong(DurationUnit.MILLISECONDS)
+            }
 
             defaultRequest {
                 url(NetworkConfig.BASE_URL)

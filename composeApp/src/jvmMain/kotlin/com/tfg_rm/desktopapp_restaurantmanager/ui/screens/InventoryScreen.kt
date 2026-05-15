@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -70,7 +74,6 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                     )
                 }
                 var showAddDialog by remember { mutableStateOf(false) }
-                var showCategoryDialog by remember { mutableStateOf(false) }
                 var editTarget by remember { mutableStateOf<Ingredient?>(null) }
                 var deleteTarget by remember { mutableStateOf<Ingredient?>(null) }
                 var snackbarMessage by remember { mutableStateOf<String?>(null) }
@@ -114,18 +117,6 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                             )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            OutlinedButton(
-                                onClick = { showCategoryDialog = true },
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155)),
-                                modifier = Modifier.height(48.dp)
-                            ) {
-                                Text(
-                                    text = Strings.t("screen.inventory.manage_categories"),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
                             Button(
                                 onClick = { showAddDialog = true },
                                 colors = ButtonDefaults.buttonColors(containerColor = Orange),
@@ -316,15 +307,6 @@ fun InventoryScreen(viewModel: InventoryViewModel, modifier: Modifier = Modifier
                         }
                     )
                 }
-
-                if (showCategoryDialog) {
-                    CategoryManagerDialog(
-                        categories = categories,
-                        onDismiss = { showCategoryDialog = false },
-                        onAdd = { },
-                        onDelete = { }
-                    )
-                }
             }
         }
     }
@@ -383,13 +365,12 @@ private fun IngredientFormDialog(
     errorMessage: String? = null
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
-    var category by remember { mutableStateOf(initial?.category ?: categories.first()) }
+    var category by remember { mutableStateOf(initial?.category ?: Category(0, "")) }
     var unit by remember { mutableStateOf(initial?.unit ?: "kg") }
     var stock by remember { mutableStateOf(initial?.stockQuantity?.toString() ?: "") }
     var minStock by remember { mutableStateOf(initial?.minimumStock?.toString() ?: "") }
     var cost by remember { mutableStateOf(initial?.costUnit?.toString() ?: "") }
     var usableInDishes by remember { mutableStateOf(initial?.usableInDishes ?: true) }
-    var showCatPicker by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -405,28 +386,87 @@ private fun IngredientFormDialog(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextField(
-                            value = category?.name ?: "",
-                            onValueChange = { },
-                            label = { Text(Strings.t("screen.ingredient.form.category")) },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Column {
-                            if (showCatPicker) {
-                                categories.forEach { cat ->
-                                    TextButton(onClick = {
-                                        category = cat; showCatPicker = false
-                                    }) { Text(text = cat.name) }
-                                }
-                            } else {
-                                OutlinedButton(onClick = { showCatPicker = true }) { Text(text = "▾") }
+
+                    var expanded by remember { mutableStateOf(false) }
+
+                    var textDisplay by remember(category) { mutableStateOf(category?.name ?: "") }
+
+                    val isEditable = category.id == 0
+
+                    OutlinedTextField(
+                        value = textDisplay,
+                        onValueChange = { newValue ->
+                            if (isEditable) {
+                                textDisplay = newValue
+                                category = Category(id = 0, name = newValue)
                             }
+                        },
+                        label = {
+                            if (!isEditable)
+                                Text(Strings.t("screen.ingredient.form.category"))
+                            else Text(Strings.t("screen.ingredient.form.newcategory"))
+                        },
+                        singleLine = true,
+                        enabled = true,
+                        readOnly = !isEditable,
+                        trailingIcon = {
+                            IconButton(onClick = { expanded = !expanded }) {
+                                Icon(
+                                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.fillMaxWidth(0.8f)
+                    ) {
+                        categories.forEach { existingCat ->
+                            DropdownMenuItem(
+                                text = { Text(existingCat.name) },
+                                onClick = {
+                                    category = existingCat
+                                    textDisplay = existingCat.name
+                                    expanded = false
+                                }
+                            )
                         }
+
+                        if (categories.isNotEmpty()) {
+                            HorizontalDivider()
+                        }
+
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(Strings.t("screen.ingredient.form.newcategory"))
+                                }
+                            },
+                            onClick = {
+                                category = Category(id = 0, name = "")
+                                textDisplay = ""
+                                expanded = false
+                            }
+                        )
+                    }
+
+                    if (!isEditable) {
+                        Text(
+                            text = Strings.t("screen.ingredient.form.oldcategory"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                        )
                     }
                     TextField(
                         value = unit,
@@ -501,7 +541,7 @@ private fun IngredientFormDialog(
                 val costD = cost.toDoubleOrNull()
                 when {
                     name.isBlank() -> error = Strings.t("screen.ingredient.form.error.name_required")
-                    category == null -> error = Strings.t("screen.ingredient.form.error.category_required")
+                    category.name.isEmpty() -> error = Strings.t("screen.ingredient.form.error.category_required")
                     unit.isBlank() -> error = Strings.t("screen.ingredient.form.error.unit_required")
                     stockD == null -> error = Strings.t("screen.ingredient.form.error.stock_invalid")
                     minD == null -> error = Strings.t("screen.ingredient.form.error.min_stock_invalid")

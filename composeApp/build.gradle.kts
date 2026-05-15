@@ -10,7 +10,7 @@ plugins {
 
 kotlin {
     jvm()
-    
+
     sourceSets {
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -50,6 +50,15 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.tfg_rm.desktopapp_restaurantmanager"
             packageVersion = "1.0.0"
+
+            windows {
+                // Apunta al archivo .ico
+                iconFile.set(project.file("src/desktopMain/resources/icon.ico"))
+            }
+            macOS {
+                // Apunta al archivo .icns
+                iconFile.set(project.file("src/desktopMain/resources/icon.icns"))
+            }
         }
     }
 }

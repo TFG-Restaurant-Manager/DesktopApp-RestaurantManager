@@ -198,158 +198,167 @@ private fun StepTypeScreen(
 
             tables = tables.filter { it.section == seccionSeleccionada }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween // Separa el texto del selector
-            ) {
+            if (tables.isEmpty()) {
                 Text(
-                    text = Strings.t("screen.newOrden.selecttable"),
+                    Strings.t("no_tables"),
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
-                    color = Color(0xFF0F172A),
-                    modifier = Modifier.weight(1f) // El texto empuja al selector
+                    color = orange
                 )
-
-                Box {
-                    Surface(
-                        onClick = { expanded = !expanded },
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp, vertical = 8.dp), // Padding compacto
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = seccionSeleccionada?.name ?: Strings.t("choose"),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Icon(
-                                imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        // El menú se ajusta al contenido de las opciones
-                        modifier = Modifier.widthIn(min = 150.dp)
-                    ) {
-                        secciones.forEach { option ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = option.name,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                },
-                                onClick = {
-                                    seccionSeleccionada = option
-                                    expanded = false
-                                },
-                                colors = MenuDefaults.itemColors(
-                                    textColor = if (option == seccionSeleccionada)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-
-            val maxCol = tables.maxOfOrNull { it.posX } ?: 6
-            val maxRow = tables.maxOfOrNull { it.posY } ?: 5
-            val cellDp = 100.dp
-            val gapDp = 12.dp
-
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                shadowElevation = 2.dp,
-                color = Color.White,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .wrapContentSize()
-            ) {
-                Box(
+            } else {
+                Row(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween // Separa el texto del selector
                 ) {
-                    Spacer(
-                        modifier = Modifier.size(
-                            width = (cellDp * maxCol) + (gapDp * (maxCol - 1)),
-                            height = (cellDp * maxRow) + (gapDp * (maxRow - 1))
-                        )
+                    Text(
+                        text = Strings.t("screen.newOrden.selecttable"),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = Color(0xFF0F172A),
+                        modifier = Modifier.weight(1f) // El texto empuja al selector
                     )
 
-                    // empty cells
-                    for (r in 1..maxRow) {
-                        for (c in 1..maxCol) {
-                            if (tables.none { it.posX == c && it.posY == r }) {
-                                Box(
-                                    modifier = Modifier
-                                        .offset(
-                                            x = ((c - 1) * (cellDp + gapDp).value).dp,
-                                            y = ((r - 1) * (cellDp + gapDp).value).dp
+                    Box {
+                        Surface(
+                            onClick = { expanded = !expanded },
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(horizontal = 12.dp, vertical = 8.dp), // Padding compacto
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = seccionSeleccionada?.name ?: Strings.t("choose"),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Icon(
+                                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            // El menú se ajusta al contenido de las opciones
+                            modifier = Modifier.widthIn(min = 150.dp)
+                        ) {
+                            secciones.forEach { option ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = option.name,
+                                            style = MaterialTheme.typography.bodyMedium
                                         )
-                                        .size(cellDp)
-                                        .border(1.dp, Color(0xFFF0F0F0), RoundedCornerShape(10.dp))
+                                    },
+                                    onClick = {
+                                        seccionSeleccionada = option
+                                        expanded = false
+                                    },
+                                    colors = MenuDefaults.itemColors(
+                                        textColor = if (option == seccionSeleccionada)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
                                 )
                             }
                         }
                     }
-                    // tables
-                    tables.forEach { table ->
-                        val isSelected = selectedTableId == table
-                        Box(
-                            modifier = Modifier
-                                .offset(
-                                    x = ((table.posX - 1) * (cellDp + gapDp).value).dp,
-                                    y = ((table.posY - 1) * (cellDp + gapDp).value).dp
-                                )
-                                .size(cellDp)
-                                .background(
-                                    color = if (isSelected) orange else Color(0xFFFF9950),
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                .border(
-                                    width = if (isSelected) 3.dp else 0.dp,
-                                    color = if (isSelected) Color(0xFFCC4400) else Color.Transparent,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                .clickable { viewModel.selectTable(table) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    if (table.name.isEmpty()) table.id.toString()
-                                    else if (table.name.length >= 3) table.name.substring(
-                                        3
+                }
+
+                val maxCol = tables.maxOfOrNull { it.posX } ?: 6
+                val maxRow = tables.maxOfOrNull { it.posY } ?: 5
+                val cellDp = 100.dp
+                val gapDp = 12.dp
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 2.dp,
+                    color = Color.White,
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .wrapContentSize()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(16.dp)
+                    ) {
+                        Spacer(
+                            modifier = Modifier.size(
+                                width = (cellDp * maxCol) + (gapDp * (maxCol - 1)),
+                                height = (cellDp * maxRow) + (gapDp * (maxRow - 1))
+                            )
+                        )
+
+                        // empty cells
+                        for (r in 1..maxRow) {
+                            for (c in 1..maxCol) {
+                                if (tables.none { it.posX == c && it.posY == r }) {
+                                    Box(
+                                        modifier = Modifier
+                                            .offset(
+                                                x = ((c - 1) * (cellDp + gapDp).value).dp,
+                                                y = ((r - 1) * (cellDp + gapDp).value).dp
+                                            )
+                                            .size(cellDp)
+                                            .border(1.dp, Color(0xFFF0F0F0), RoundedCornerShape(10.dp))
                                     )
-                                    else table.name,
-                                    fontSize = 26.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    "👤 ${table.capacity}",
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
-                                )
+                                }
+                            }
+                        }
+                        // tables
+                        tables.forEach { table ->
+                            val isSelected = selectedTableId == table
+                            Box(
+                                modifier = Modifier
+                                    .offset(
+                                        x = ((table.posX - 1) * (cellDp + gapDp).value).dp,
+                                        y = ((table.posY - 1) * (cellDp + gapDp).value).dp
+                                    )
+                                    .size(cellDp)
+                                    .background(
+                                        color = if (isSelected) orange else Color(0xFFFF9950),
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    .border(
+                                        width = if (isSelected) 3.dp else 0.dp,
+                                        color = if (isSelected) Color(0xFFCC4400) else Color.Transparent,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    .clickable { viewModel.selectTable(table) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        if (table.name.isEmpty()) table.id.toString()
+                                        else if (table.name.length >= 3) table.name.substring(
+                                            3
+                                        )
+                                        else table.name,
+                                        fontSize = 26.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        "👤 ${table.capacity}",
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.85f)
+                                    )
+                                }
                             }
                         }
                     }
@@ -903,9 +912,9 @@ private fun StepPaymentScreen(viewModel: NewOrderViewModel) {
 
             Button(
                 onClick = {
-                    if (submitting) {
-                        submitting = true
+                    if (!submitting) {
                         viewModel.submitOrder()
+                        submitting = true
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),

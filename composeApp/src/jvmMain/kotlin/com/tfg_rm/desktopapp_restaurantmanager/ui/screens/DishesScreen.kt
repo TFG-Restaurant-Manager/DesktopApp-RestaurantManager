@@ -1,7 +1,6 @@
 package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -10,7 +9,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -418,7 +419,6 @@ private fun DishRow(dish: Dishes, onEdit: () -> Unit, onDelete: () -> Unit) {
 // Add / Edit dialog
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DishFormDialog(
     dish: Dishes?,
@@ -428,11 +428,10 @@ private fun DishFormDialog(
     onSave: (Dishes) -> Unit
 ) {
     val isEdit = dish != null
-    var expanded by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf(dish?.name ?: "") }
     var description by remember { mutableStateOf(dish?.description ?: "") }
-    var category by remember { mutableStateOf(dish?.category ?: Category(0, "---")) }
+    var category by remember { mutableStateOf(dish?.category ?: Category(0, "")) }
     var price by remember { mutableStateOf(dish?.price?.toString() ?: "") }
     var available by remember { mutableStateOf(dish?.available ?: true) }
     var dishIngredients by remember { mutableStateOf(dish?.ingredients ?: emptyList()) }
@@ -443,6 +442,7 @@ private fun DishFormDialog(
 
     var nameError by remember { mutableStateOf("") }
     var priceError by remember { mutableStateOf("") }
+    var categoryError by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -481,70 +481,114 @@ private fun DishFormDialog(
                     minLines = 2
                 )
 
-                // Category + Price in one row
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = category.name,
-                            onValueChange = { },
-                            readOnly = true,
-                            label = { Text(Strings.t("screen.dish.form.category")) },
-                            trailingIcon = {
-                                IconButton(onClick = { expanded = true }) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowDropDown,
-                                        contentDescription = null
-                                    )
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                var expanded by remember { mutableStateOf(false) }
 
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { expanded = true }
-                        )
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false },
-                            modifier = Modifier.fillMaxWidth(0.5f)
-                        ) {
-                            categories.forEach { opcion ->
-                                DropdownMenuItem(
-                                    text = { Text(opcion.name) },
-                                    onClick = {
-                                        category = opcion
-                                        expanded = false
-                                    }
-                                )
-                            }
+                var textDisplay by remember(category) { mutableStateOf(category?.name ?: "") }
+
+                val isEditable = category.id == 0
+
+                OutlinedTextField(
+                    value = textDisplay,
+                    onValueChange = { newValue ->
+                        if (isEditable) {
+                            textDisplay = newValue
+                            category = Category(id = 0, name = newValue)
                         }
+                    },
+                    label = {
+                        if (!isEditable)
+                            Text(Strings.t("screen.ingredient.form.category"))
+                        else Text(Strings.t("screen.ingredient.form.newcategory"))
+                    },
+                    singleLine = true,
+                    enabled = true,
+                    readOnly = !isEditable,
+                    trailingIcon = {
+                        IconButton(onClick = { expanded = !expanded }) {
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = if (categoryError.isNotEmpty()) {
+                        { Text(categoryError) }
+                    } else null,
+                    isError = categoryError.isNotEmpty()
+                )
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                ) {
+                    categories.forEach { existingCat ->
+                        DropdownMenuItem(
+                            text = { Text(existingCat.name) },
+                            onClick = {
+                                category = existingCat
+                                textDisplay = existingCat.name
+                                expanded = false
+                            }
+                        )
                     }
-                    OutlinedTextField(
-                        value = price,
-                        onValueChange = { newValue ->
-                            val sanitizedInput = newValue.replace(',', '.')
 
-                            if (sanitizedInput.isEmpty() || sanitizedInput.matches(Regex("""^\d*\.?\d*$"""))) {
-                                price = sanitizedInput
+                    if (categories.isNotEmpty()) {
+                        HorizontalDivider()
+                    }
 
-                                val isDouble = sanitizedInput.toDoubleOrNull() != null
-                                priceError = if (!isDouble && sanitizedInput.isNotEmpty()) {
-                                    "Formato de precio inválido"
-                                } else {
-                                    ""
-                                }
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(Strings.t("screen.ingredient.form.newcategory"))
                             }
                         },
-                        label = { Text(Strings.t("screen.dish.form.price")) },
-                        isError = priceError.isNotEmpty(),
-                        supportingText = if (priceError.isNotEmpty()) {
-                            { Text(priceError, color = MaterialTheme.colorScheme.error) }
-                        } else null,
-                        modifier = Modifier.weight(1f)
+                        onClick = {
+                            category = Category(id = 0, name = "")
+                            textDisplay = ""
+                            expanded = false
+                        }
                     )
                 }
+
+                if (!isEditable) {
+                    Text(
+                        text = Strings.t("screen.ingredient.form.oldcategory"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                    )
+                }
+                OutlinedTextField(
+                    value = price,
+                    onValueChange = { newValue ->
+                        val sanitizedInput = newValue.replace(',', '.')
+
+                        if (sanitizedInput.isEmpty() || sanitizedInput.matches(Regex("""^\d*\.?\d*$"""))) {
+                            price = sanitizedInput
+
+                            val isDouble = sanitizedInput.toDoubleOrNull() != null
+                            priceError = if (!isDouble && sanitizedInput.isNotEmpty()) {
+                                "Formato de precio inválido"
+                            } else {
+                                ""
+                            }
+                        }
+                    },
+                    label = { Text(Strings.t("screen.dish.form.price")) },
+                    isError = priceError.isNotEmpty(),
+                    supportingText = if (priceError.isNotEmpty()) {
+                        { Text(priceError, color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 // Available toggle
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -572,61 +616,75 @@ private fun DishFormDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    ExposedDropdownMenuBox(
-                        expanded = dropdownExpanded,
-                        onExpandedChange = { dropdownExpanded = it },
-                        modifier = Modifier.weight(2.5f)
-                    ) {
+                    // Selector de ingrediente (Alternativa estable a ExposedDropdownMenuBox)
+                    Box(modifier = Modifier.weight(2.5f)) {
                         OutlinedTextField(
                             value = selectedIngredient?.let { "${it.name} (${it.unit})" }
                                 ?: Strings.t("screen.dish.form.select_ingredient"),
                             onValueChange = {},
                             readOnly = true,
                             label = { Text(Strings.t("screen.dish.form.select_ingredient")) },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
+                            trailingIcon = {
+                                // Icono estándar manual
+                                IconButton(onClick = { dropdownExpanded = !dropdownExpanded }) {
+                                    Icon(
+                                        imageVector = if (dropdownExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.ArrowDropDown,
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        ExposedDropdownMenu(
+
+                        // El menú desplegable estándar (Estable)
+                        DropdownMenu(
                             expanded = dropdownExpanded,
-                            onDismissRequest = { dropdownExpanded = false }
+                            onDismissRequest = { dropdownExpanded = false },
+                            // Esto asegura que el menú tenga el mismo ancho que el TextField
+                            modifier = Modifier.fillMaxWidth(0.6f)
                         ) {
                             if (availableIngredients.isEmpty()) {
                                 DropdownMenuItem(
                                     text = { Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                    onClick = {}
+                                    onClick = { dropdownExpanded = false }
                                 )
                             } else {
                                 availableIngredients.forEach { ing ->
                                     DropdownMenuItem(
                                         text = { Text("${ing.name} (${ing.unit})") },
-                                        onClick = { selectedIngredient = ing; dropdownExpanded = false }
+                                        onClick = {
+                                            selectedIngredient = ing
+                                            dropdownExpanded = false
+                                        }
                                     )
                                 }
                             }
                         }
                     }
 
+                    // Campo de cantidad
                     OutlinedTextField(
                         value = ingredientQuantity,
                         onValueChange = { newValue ->
                             val sanitizedInput = newValue.replace(',', '.')
-
                             if (sanitizedInput.isEmpty() || sanitizedInput.matches(Regex("""^\d*\.?\d*$"""))) {
                                 ingredientQuantity = sanitizedInput
-
+                                // Nota: He mantenido tu lógica de validación, pero asegúrate de que priceError
+                                // sea lo que quieres actualizar aquí y no un quantityError específico.
                                 val isDouble = sanitizedInput.toDoubleOrNull() != null
                                 priceError = if (!isDouble && sanitizedInput.isNotEmpty()) {
-                                    "Formato de precio inválido"
+                                    "Formato inválido"
                                 } else {
                                     ""
                                 }
                             }
                         },
                         label = { Text(Strings.t("screen.dish.form.quantity")) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1.2f), // Un poco más de peso para que no se corte el texto
+                        singleLine = true
                     )
 
+                    // Botón añadir
                     Button(
                         onClick = {
                             val ing = selectedIngredient
@@ -642,9 +700,10 @@ private fun DishFormDialog(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = dishOrange),
-                        modifier = Modifier.padding(top = 4.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.padding(top = 4.dp).height(56.dp) // Altura alineada con los TextField
                     ) {
-                        Text(Strings.t("screen.dish.form.add_ingredient"), color = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
                     }
                 }
 
@@ -696,6 +755,10 @@ private fun DishFormDialog(
                     val priceVal = price.replace(',', '.').toDoubleOrNull()
                     if (priceVal == null || priceVal < 0.0) {
                         priceError = Strings.t("screen.dish.form.error.price_invalid")
+                        valid = false
+                    }
+                    if (category.name.isEmpty()) {
+                        categoryError = Strings.t("screen.ingredient.form.error.category_required")
                         valid = false
                     }
                     if (valid) {

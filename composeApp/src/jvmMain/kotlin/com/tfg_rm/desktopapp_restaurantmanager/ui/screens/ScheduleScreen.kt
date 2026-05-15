@@ -2,6 +2,9 @@ package com.tfg_rm.desktopapp_restaurantmanager.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
@@ -576,202 +579,215 @@ private fun ShiftEditDialog(
             currentShift.ifEmpty {
                 listOf(
                     Shift(
-                        startDateTime = LocalDateTime.of(
-                            shiftDate,
-                            LocalTime.of(9, 0)
-                        ),
-                        endDateTime = LocalDateTime.of(
-                            shiftDate,
-                            LocalTime.of(17, 0)
-                        )
+                        startDateTime = LocalDateTime.of(shiftDate, LocalTime.of(9, 0)),
+                        endDateTime = LocalDateTime.of(shiftDate, LocalTime.of(17, 0))
                     )
                 )
             }
         )
     }
 
+    // Estado para el selector manual de hora
+    var editingTime by remember { mutableStateOf<Triple<Int, Boolean, LocalTime>?>(null) } // Index, IsStart, Time
     var error by remember { mutableStateOf<String?>(null) }
+
+    // Diálogo Manual de Selección de Hora (Sin APIs experimentales)
+    if (editingTime != null) {
+        val (index, isStart, time) = editingTime!!
+        var tempHour by remember { mutableStateOf(time.hour) }
+        var tempMinute by remember { mutableStateOf(time.minute) }
+
+        AlertDialog(
+            onDismissRequest = { editingTime = null },
+            title = {
+                Text(
+                    if (isStart) Strings.t("screen.shift.start_label") else Strings.t("screen.shift.end_label"),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        WheelNumberPicker(
+                            value = tempHour,
+                            range = 0..23,
+                            modifier = Modifier.weight(1f),
+                            onValueChange = { tempHour = it }
+                        )
+                        Text(
+                            ":",
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        WheelNumberPicker(
+                            value = tempMinute,
+                            range = 0..59,
+                            modifier = Modifier.weight(1f),
+                            onValueChange = { tempMinute = it }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val newTime = LocalTime.of(tempHour, tempMinute)
+                        schedules = schedules.toMutableList().apply {
+                            this[index] = if (isStart) {
+                                this[index].copy(startDateTime = LocalDateTime.of(shiftDate, newTime))
+                            } else {
+                                this[index].copy(endDateTime = LocalDateTime.of(shiftDate, newTime))
+                            }
+                        }
+                        editingTime = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316))
+                ) { Text(Strings.t("screen.shift.save")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingTime = null }) {
+                    Text(Strings.t("screen.shift.cancel"), color = Color.Gray)
+                }
+            }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color.White,
-        shape = RoundedCornerShape(16.dp),
         title = {
-            Text(
-                text = String.format(
-                    Strings.t("screen.shift.title_format"),
-                    employee.name,
-                    dayNames[day]
-                ) + " ${shiftDate.dayOfMonth} ${shiftDate.month.name} ${shiftDate.year}",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = Color(0xFF0F172A)
-            )
+            Text("${employee.name} - ${shiftDate.dayOfMonth}/${shiftDate.monthValue}", fontWeight = FontWeight.Bold)
         },
         text = {
-            Column(
-                modifier = Modifier
-                    .widthIn(min = 420.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-
+            Column(modifier = Modifier.width(420.dp).verticalScroll(rememberScrollState())) {
                 schedules.forEachIndexed { index, shift ->
-
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-
-                        OutlinedTextField(
-                            value = shift.startDateTime.format(formatter),
-                            onValueChange = { newStart ->
-                                try {
-                                    val startTime = LocalTime.parse(newStart, formatter)
-
-                                    schedules = schedules.toMutableList().apply {
-                                        this[index] = shift.copy(
-                                            startDateTime = LocalDateTime.of(
-                                                shift.startDateTime.toLocalDate(),
-                                                startTime
-                                            )
-                                        )
-                                    }
-
-                                    error = null
-                                } catch (_: Exception) {
-                                }
-                            },
-                            label = {
-                                Text(
-                                    Strings.t("screen.shift.start_label"),
-                                    color = Color(0xFF64748B)
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        OutlinedTextField(
-                            value = shift.endDateTime.format(formatter),
-                            onValueChange = { newEnd ->
-                                try {
-                                    val endTime = LocalTime.parse(newEnd, formatter)
-
-                                    schedules = schedules.toMutableList().apply {
-                                        this[index] = shift.copy(
-                                            endDateTime = LocalDateTime.of(
-                                                shift.endDateTime.toLocalDate(),
-                                                endTime
-                                            )
-                                        )
-                                    }
-
-                                    error = null
-                                } catch (_: Exception) {
-                                }
-                            },
-                            label = {
-                                Text(
-                                    Strings.t("screen.shift.end_label"),
-                                    color = Color(0xFF64748B)
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            shape = RoundedCornerShape(8.dp)
+                        // Botón Hora Inicio
+                        TimeButton(
+                            label = Strings.t("screen.shift.start_label"),
+                            time = shift.startDateTime.format(formatter),
+                            onClick = { editingTime = Triple(index, true, shift.startDateTime.toLocalTime()) },
+                            modifier = Modifier.weight(1f)
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        IconButton(
-                            onClick = {
-                                schedules = schedules.toMutableList().apply {
-                                    removeAt(index)
-                                }
-                            }
-                        ) {
-                            Text(
-                                text = "✕",
-                                color = Color(0xFFEF4444),
-                                fontWeight = FontWeight.Bold
-                            )
+                        // Botón Hora Fin
+                        TimeButton(
+                            label = Strings.t("screen.shift.end_label"),
+                            time = shift.endDateTime.format(formatter),
+                            onClick = { editingTime = Triple(index, false, shift.endDateTime.toLocalTime()) },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(onClick = { schedules = schedules.filterIndexed { i, _ -> i != index } }) {
+                            Text("✕", color = Color.Red)
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
+                // Botón Añadir
                 if (schedules.size < 4) {
-                    OutlinedButton(
-                        onClick = {
-                            schedules = schedules + Shift(
-                                startDateTime = LocalDateTime.of(
-                                    shiftDate,
-                                    LocalTime.of(9, 0)
-                                ),
-                                endDateTime = LocalDateTime.of(
-                                    shiftDate,
-                                    LocalTime.of(17, 0)
-                                )
-                            )
-                        },
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("+ ${Strings.t("screen.shift.add_shift")}")
-                    }
+                    TextButton(onClick = {
+                        schedules = schedules + Shift(
+                            startDateTime = LocalDateTime.of(shiftDate, LocalTime.of(9, 0)),
+                            endDateTime = LocalDateTime.of(shiftDate, LocalTime.of(17, 0))
+                        )
+                    }) { Text("+ " + Strings.t("screen.shift.add_shift")) }
                 }
 
-                if (error != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = error!!,
-                        color = Color(0xFFEF4444),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                error?.let { Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall) }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    try {
-                        schedules.forEach { shift ->
-                            if (!shift.endDateTime.toLocalTime()
-                                    .isAfter(shift.startDateTime.toLocalTime())
-                            ) {
-                                throw IllegalArgumentException(
-                                    Strings.t("screen.shift.error.end_after_start")
-                                )
-                            }
-                        }
-
-                        onSave(employee, schedules)
-                    } catch (e: Exception) {
-                        error = e.message ?: Strings.t("screen.shift.error.format_invalid")
-                    }
+                    val isValid = schedules.all { it.endDateTime.isAfter(it.startDateTime) }
+                    if (isValid) onSave(employee, schedules) else error =
+                        Strings.t("screen.shift.error.end_after_start")
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = Strings.t("screen.shift.save"),
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316))
+            ) { Text(Strings.t("screen.shift.save")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    text = Strings.t("screen.shift.cancel"),
-                    color = Color(0xFF64748B),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            TextButton(onClick = onDismiss) { Text(Strings.t("screen.shift.cancel")) }
         }
     )
+}
+
+@Composable
+fun TimeButton(label: String, time: String, onClick: () -> Unit, modifier: Modifier) {
+    OutlinedCard(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text(time, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+fun WheelNumberPicker(
+    value: Int,
+    range: IntRange,
+    modifier: Modifier = Modifier,
+    onValueChange: (Int) -> Unit
+) {
+    val itemHeight = 40.dp
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = value - range.first)
+
+    // Sincronizar el scroll con la selección
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress) {
+            val centerIndex = listState.firstVisibleItemIndex +
+                    if (listState.firstVisibleItemScrollOffset > 20) 1 else 0
+            onValueChange(range.elementAt(centerIndex.coerceIn(0, range.count() - 1)))
+            listState.animateScrollToItem(centerIndex)
+        }
+    }
+
+    Box(modifier = modifier.height(itemHeight * 3), contentAlignment = Alignment.Center) {
+        // Fondo resaltado para el item seleccionado
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(itemHeight),
+            color = Color(0xFFF1F5F9),
+            shape = RoundedCornerShape(8.dp)
+        ) {}
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(vertical = itemHeight) // Para que el primero/último lleguen al centro
+        ) {
+            items(range.toList()) { number ->
+                val isSelected = number == value
+                Box(
+                    modifier = Modifier.height(itemHeight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = number.toString().padStart(2, '0'),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) Color(0xFFF97316) else Color.LightGray
+                    )
+                }
+            }
+        }
+    }
 }

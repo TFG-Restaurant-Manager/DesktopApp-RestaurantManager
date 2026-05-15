@@ -68,6 +68,8 @@ class InventoryViewModel(
                         UiState.Success(state.data + newIngredient)
                     } else state
                 }
+                _categories.value = (_ingredients.value as UiState.Success).data
+                    .map { it.category }.distinct()
             } catch (_: UnresolvedAddressException) {
                 println("Error on addIngredient in InventoryViewModel, direccion ip no existente")
             } catch (e: Exception) {

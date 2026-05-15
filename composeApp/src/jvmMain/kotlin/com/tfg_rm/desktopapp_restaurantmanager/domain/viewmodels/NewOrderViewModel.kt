@@ -166,6 +166,7 @@ class NewOrderViewModel(
     fun submitOrder() {
         viewModelScope.launch {
             try {
+                println("Inicio Submit order")
                 val items = _draftItems.value.map { draft ->
                     val modNotes = draft.ingredientMods.entries
                         .filter { it.value != "NORMAL" }
@@ -226,6 +227,7 @@ class NewOrderViewModel(
                 reset()
             } catch (e: UnresolvedAddressException) {
                 println("Error on submitOrder in NewOrderViewModel, direccion ip no existente")
+                e.printStackTrace()
                 reset()
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -169,27 +169,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                 )
                             }
                         }
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(vertical = 24.dp, horizontal = 24.dp)) {
-                                Text(
-                                    text = Strings.t("screen.employees.text.totalpayroll"),
-                                    color = Color(0xFF64748B),
-                                    fontSize = 14.sp
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "${totalPayroll}€",
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
-                                )
-                            }
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -225,12 +204,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF334155),
                                     modifier = Modifier.weight(2f)
-                                )
-                                Text(
-                                    Strings.t("screen.employees.text.salary"),
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF334155),
-                                    modifier = Modifier.weight(1f)
                                 )
                                 Text(
                                     Strings.t("screen.employees.text.status"),
@@ -278,23 +251,6 @@ fun EmployeesScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier
                                                 Text(emp.phone ?: "---", color = Color(0xFF64748B), fontSize = 14.sp)
                                             }
                                         }
-
-                                        // Mocking salary based on standard assumption
-                                        val mockSalary = if (emp.roleName.contains(
-                                                "Gerente",
-                                                ignoreCase = true
-                                            )
-                                        ) "2800€/mes" else if (emp.roleName.contains(
-                                                "Chef",
-                                                ignoreCase = true
-                                            )
-                                        ) "2500€/mes" else "1400€/mes"
-                                        Text(
-                                            mockSalary,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF0F172A),
-                                            modifier = Modifier.weight(1f)
-                                        )
 
                                         // Badge
                                         Box(modifier = Modifier.weight(1f)) {
@@ -465,7 +421,7 @@ private fun EditEmployeePasswordDialog(emp: Employee, onDismiss: () -> Unit, onS
 
 @Composable
 private fun EditEmployeeDialog(emp: Employee, onDismiss: () -> Unit, onSave: (Employee) -> Unit) {
-    val roles = listOf("MANAGER", "WAITER", "COOKER", "ADMIN")
+    val roles = listOf("MANAGER", "WAITER", "COOKER")
     var roleExpanded by remember { mutableStateOf(false) }
     var role by remember { mutableStateOf(emp.roleName) }
     var name by remember { mutableStateOf(emp.name) }
