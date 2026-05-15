@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tfg_rm.desktopapp_restaurantmanager.data.remote.dto.ClipboardShift
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Employee
 import com.tfg_rm.desktopapp_restaurantmanager.domain.models.Shift
 import com.tfg_rm.desktopapp_restaurantmanager.domain.viewmodels.EmployeesViewModel
@@ -31,6 +32,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 private val DAYS = listOf(
@@ -87,7 +89,7 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                 // Editing state: a pair of (employee, day) being edited
                 var editTarget by remember { mutableStateOf<Pair<Employee, DayOfWeek>?>(null) }
 
-                var clipboardSchedules by remember { mutableStateOf<List<Shift>?>(null) }
+                var clipboardSchedules by remember { mutableStateOf<List<ClipboardShift>?>(null) }
 
                 val weekEnd = weekStart.plusDays(6)
                 val fmt = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es"))
@@ -260,7 +262,10 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                         employees = employees,
                         weekStart = weekStart,
                         clipboardSchedules,
-                        { clipboardSchedules = it },
+                        {
+                            println(it)
+                            clipboardSchedules = it
+                        },
                         editTarget = { editTarget = it },
                         onPaste = { employee, newWeekSchedules ->
                             val otherWeeksSchedules = employee.schedules.filterNot { shift ->
@@ -269,8 +274,14 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
                                 !date.isBefore(weekStart) && !date.isAfter(weekStart.plusDays(6))
                             }
 
+                            val schedulesToAdd = newWeekSchedules.filter { shift ->
+                                val date = shift.startDateTime.toLocalDate()
+                                // Si la fecha está entre weekStart y weekStart + 6 días, es de esta semana
+                                !date.isBefore(weekStart) && !date.isAfter(weekStart.plusDays(6))
+                            }
+                            println(schedulesToAdd)
                             val updatedEmployee = employee.copy(
-                                schedules = otherWeeksSchedules + newWeekSchedules
+                                schedules = otherWeeksSchedules + schedulesToAdd
                             )
 
                             viewModel.updateSchedule(updatedEmployee)
@@ -308,8 +319,8 @@ fun ScheduleScreen(viewModel: EmployeesViewModel, modifier: Modifier = Modifier)
 private fun WeeklyTable(
     employees: List<Employee>,
     weekStart: LocalDate,
-    clipboardSchedules: List<Shift>?,
-    onclipboardSchedulesChange: (List<Shift>) -> Unit,
+    clipboardSchedules: List<ClipboardShift>?,
+    onclipboardSchedulesChange: (List<ClipboardShift>) -> Unit,
     editTarget: (Pair<Employee, DayOfWeek>) -> Unit,
     onPaste: (Employee, List<Shift>) -> Unit
 ) {
@@ -408,10 +419,22 @@ private fun WeeklyTable(
                                     IconButton(
                                         onClick = {
                                             onclipboardSchedulesChange(
-                                                emp.schedules.filter {
-                                                    val dia = it.startDateTime.toLocalDate()
-                                                    !dia.isBefore(weekStart) && !dia.isAfter(weekStart.plusDays(6))
-                                                }
+                                                emp.schedules
+                                                    .filter { shift ->
+                                                        val date = shift.startDateTime.toLocalDate()
+                                                        !date.isBefore(weekStart) && !date.isAfter(weekStart.plusDays(6))
+                                                    }
+                                                    .map { shift ->
+                                                        val date = shift.startDateTime.toLocalDate()
+
+                                                        val dayOffset = ChronoUnit.DAYS.between(weekStart, date)
+
+                                                        ClipboardShift(
+                                                            dayOffset = dayOffset,
+                                                            startTime = shift.startDateTime.toLocalTime(),
+                                                            endTime = shift.endDateTime.toLocalTime()
+                                                        )
+                                                    }
                                             )
                                         },
                                         modifier = Modifier.size(32.dp)
@@ -425,37 +448,19 @@ private fun WeeklyTable(
                                     // BOTÓN PEGAR
                                     IconButton(
                                         onClick = {
-                                            clipboardSchedules?.let { copiedSchedules ->
-                                                val updatedSchedules = copiedSchedules.map { oldShift ->
-                                                    // 1. Buscamos el lunes de la semana de donde venía el turno original
-                                                    val originalDate = oldShift.startDateTime.toLocalDate()
-                                                    val originalMonday = originalDate.with(DayOfWeek.MONDAY)
+                                            clipboardSchedules?.let { copied ->
 
-                                                    // 2. Calculamos cuántos días de diferencia hay (0 para Lunes, 1 para Martes, etc.)
-                                                    val daysFromMonday = java.time.temporal.ChronoUnit.DAYS.between(
-                                                        originalMonday,
-                                                        originalDate
-                                                    )
+                                                val updatedSchedules = copied.map { clip ->
 
-                                                    // 3. Aplicamos esa diferencia al lunes de la semana ACTUAL (destino)
-                                                    val targetDate = weekStart.plusDays(daysFromMonday)
+                                                    val targetDate = weekStart.plusDays(clip.dayOffset)
 
-                                                    oldShift.copy(
-                                                        // Forzamos el ID a 0 para que el backend lo trate como nuevo
-                                                        // o lo regenere si es necesario, evitando conflictos de Primary Key
+                                                    Shift(
                                                         id = 0,
-                                                        startDateTime = LocalDateTime.of(
-                                                            targetDate,
-                                                            oldShift.startDateTime.toLocalTime()
-                                                        ),
-                                                        endDateTime = LocalDateTime.of(
-                                                            targetDate,
-                                                            oldShift.endDateTime.toLocalTime()
-                                                        )
+                                                        startDateTime = LocalDateTime.of(targetDate, clip.startTime),
+                                                        endDateTime = LocalDateTime.of(targetDate, clip.endTime)
                                                     )
                                                 }
 
-                                                // 4. Limpiamos la semana actual del empleado destino y añadimos los nuevos
                                                 val finalSchedules = emp.schedules.filterNot {
                                                     val dia = it.startDateTime.toLocalDate()
                                                     !dia.isBefore(weekStart) && !dia.isAfter(weekStart.plusDays(6))

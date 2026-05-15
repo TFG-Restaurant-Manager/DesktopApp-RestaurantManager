@@ -85,6 +85,7 @@ class TablesViewModel(
                     status = "AVAILABLE",
                     name = name
                 )
+                println(newTable)
                 val tables = (_tables.value as UiState.Success).data + newTable
                 _tables.update { state ->
                     if (state is UiState.Success) {
@@ -175,8 +176,10 @@ class TablesViewModel(
                 if (state is UiState.Success) {
                     val tables = state.data
                     service.updateTable(tables)
+                    println("Lo que envio: $tables")
                     service.clearCache()
                     val result = service.getTables()
+                    println("Lo que me devuelve: $result")
                     _tables.value = UiState.Success(result)
                     _sections.value = (_tables.value as UiState.Success).data.map { it.section }.distinct()
                 }

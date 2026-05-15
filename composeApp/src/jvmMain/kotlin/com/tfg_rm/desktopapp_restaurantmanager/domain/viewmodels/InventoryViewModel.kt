@@ -62,6 +62,7 @@ class InventoryViewModel(
     fun addIngredient(ingredient: Ingredient) {
         viewModelScope.launch {
             try {
+                println("Enviado: $ingredient")
                 val newIngredient = service.addIngredient(ingredient)
                 _ingredients.update { state ->
                     if (state is UiState.Success) {

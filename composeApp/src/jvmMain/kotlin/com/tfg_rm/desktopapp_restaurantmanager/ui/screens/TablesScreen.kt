@@ -826,6 +826,7 @@ fun TablesScreen(viewModel: TablesViewModel, modifier: Modifier = Modifier) {
                         row = row,
                         onDismiss = { pendingNewCol = null; pendingNewRow = null },
                         onSave = { cap, name ->
+                            println("Aqui si q se mete")
                             tablesModified = true
                             viewModel.addTable(col, row, cap, name, actualSection)
                             pendingNewCol = null
@@ -1003,7 +1004,7 @@ fun NewSectionDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Nueva sección",
+                text = Strings.t("screen.tables.section.emptysections"),
                 fontWeight = FontWeight.Bold
             )
         },
@@ -1015,7 +1016,7 @@ fun NewSectionDialog(
                         sectionName = it
                         error = ""
                     },
-                    label = { Text("Nombre de la sección") },
+                    label = { Text(Strings.t("screen.tables.section.titlename")) },
                     singleLine = true,
                     isError = error.isNotEmpty(),
                     supportingText = if (error.isNotEmpty()) {

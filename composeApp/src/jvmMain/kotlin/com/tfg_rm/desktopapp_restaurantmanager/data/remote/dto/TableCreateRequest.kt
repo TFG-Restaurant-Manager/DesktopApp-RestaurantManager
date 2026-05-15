@@ -9,5 +9,6 @@ data class TableCreateRequest(
     val capacity: Int,
     val posX: Int,
     val posY: Int,
-    val sectionId: Int?
+    val sectionId: Int?,
+    val sectionName: String
 )
