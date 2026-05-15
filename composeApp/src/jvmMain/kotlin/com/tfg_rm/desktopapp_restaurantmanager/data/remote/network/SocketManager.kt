@@ -13,42 +13,76 @@ class SocketManager(
 ) {
     private var session: DefaultClientWebSocketSession? = null
 
+    // Estado para saber si debemos intentar reconectar
+    private var isActive = false
+
     private val _messages = MutableSharedFlow<String>()
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
     suspend fun connect() {
-        disconnect()
-        session = client.webSocketSession {
-            url("${NetworkConfig.WS_URL}api/ws")
+        try {
+            disconnect()
+            isActive = true
+            session = client.webSocketSession {
+                url("${NetworkConfig.WS_URL}api/ws")
+            }
+            println("Conexión establecida correctamente")
+        } catch (e: Exception) {
+            println("Error al conectar: ${e.message}")
+            handleReconnection()
         }
-        println("SocketManager conexion realizada")
     }
 
     suspend fun sendMessage(message: String) {
-        session?.send(Frame.Text(message))
+        try {
+            session?.send(Frame.Text(message))
+        } catch (e: Exception) {
+            println("No se pudo enviar el mensaje: ${e.message}")
+            e.printStackTrace()
+        }
     }
 
     suspend fun listen() {
-        session?.let { socketSession ->
-            for (frame in socketSession.incoming) {
-                when (frame) {
-                    is Frame.Text -> {
-                        val text = frame.readText()
-                        println("Recibido en SocketManager: $text")
-                        _messages.emit(text)
+        while (isActive) { // Bucle infinito mientras queramos estar conectados
+            try {
+                session?.let { socketSession ->
+                    for (frame in socketSession.incoming) {
+                        if (frame is Frame.Text) {
+                            val text = frame.readText()
+                            _messages.emit(text)
+                        }
                     }
-
-                    else -> {}
                 }
+                // Si el bucle termina sin excepción, es que el servidor cerró normal
+                println("El servidor cerró la conexión.")
+            } catch (e: Exception) {
+                // Aquí cae el EOFException, ClosedReceiveChannelException, etc.
+                println("Error en la escucha: ${e.message}")
+            }
+
+            // Si llegamos aquí, la conexión se ha perdido
+            if (isActive) {
+                handleReconnection()
             }
         }
     }
 
+    private suspend fun handleReconnection() {
+        println("Intentando reconectar en 5 segundos...")
+        session = null
+        kotlinx.coroutines.delay(5000) // Espera antes de reintentar para no saturar
+        connect()
+    }
+
     suspend fun disconnect() {
-        session?.let {
-            it.close()
+        isActive = false
+        try {
+            session?.close()
+        } catch (e: Exception) {
+            println("Error al cerrar sesión: ${e.message}")
+            e.printStackTrace()
+        } finally {
             session = null
-            println("SocketManager websockets desconectados")
         }
     }
 }

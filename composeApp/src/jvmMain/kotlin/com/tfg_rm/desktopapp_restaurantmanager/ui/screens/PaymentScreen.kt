@@ -150,11 +150,21 @@ fun OrderItemPaymentView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = when (item.orderType) {
-                        "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${item.tableName ?: item.tableId}"
+                    text = when (item.type) {
+                        "TABLE" -> "${Strings.t("screen.orderHistory.col.table")} ${
+                            if (item.tableName != null) {
+                                if (item.tableName.isEmpty()) item.tableId.toString()
+                                else if (item.tableName.length >= 3) item.tableName.substring(
+                                    3
+                                )
+                                else item.tableName
+                            } else if (item.tableId == null)
+                                Strings.t("screen.newOrden.notableid") else item.tableId.toString()
+                        }"
+
                         "DELIVERY" -> Strings.t("screen.orderHistory.col.delivery")
                         "PICKUP" -> Strings.t("screen.orderHistory.col.pickup")
-                        else -> "Orden #${item.id}"
+                        else -> "---"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
